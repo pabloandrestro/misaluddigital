@@ -64,6 +64,11 @@ class MedicalProfile(models.Model):
     emergency_contact_name = models.CharField(max_length=100, blank=True)
     emergency_contact_phone= models.CharField(max_length=20, blank=True)
     updated_at             = models.DateTimeField(auto_now=True)
+    address                = models.CharField(max_length=255, blank=True)
+    relevance_type         = models.CharField(max_length=100, blank=True)
+    current_medications    = models.TextField(blank=True)
+    emergency_contact_relationship = models.CharField(max_length=100, blank=True)
+    recent_medical_history = models.TextField(blank=True)
 
     class Meta:
         db_table = "medical_profiles"
