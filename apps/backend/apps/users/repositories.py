@@ -6,7 +6,6 @@ User = get_user_model()
 
 
 class UserRepository:
-
     @staticmethod
     def get_by_id(user_id):
         return User.objects.filter(
@@ -53,6 +52,13 @@ class UserRepository:
         user.save()
 
         return user
+
+class MedicalProfileRepository:
+    @staticmethod
+    def get_by_user(user):
+        return MedicalProfile.objects.filter(
+            user=user
+        ).first()
 
     @staticmethod
     def get_or_create_medical_profile(user):
