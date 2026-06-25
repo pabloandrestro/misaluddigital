@@ -48,6 +48,11 @@ class DocumentRepository:
             deleted_at__isnull=True
         ).first()
 
+    # todo: implementar cuando se requiera distincion entre activo y eliminado
+    @staticmethod
+    def get_active_by_id_and_user(document_id, user):
+        pass
+
 
 class DocumentCategoryRepository:
 
