@@ -66,12 +66,58 @@ class UserSerializer(serializers.Serializer):
     rut = serializers.CharField()
     name = serializers.CharField()
 
+
+# Serializa un medicamento del campo JSON current_medications
+class MedicationSerializer(serializers.Serializer):
+    id = serializers.UUIDField(required=False)
+    name = serializers.CharField(max_length=100)
+    dose = serializers.CharField(max_length=50, required=False, allow_blank=True)
+    frequency = serializers.CharField(max_length=100, required=False, allow_blank=True)
+    start_date = serializers.DateField(required=False, allow_null=True)
+    end_date = serializers.DateField(required=False, allow_null=True)
+    notes = serializers.CharField(max_length=255, required=False, allow_blank=True)
+    active = serializers.BooleanField(default=True)
+
+    # Valida que end_date no sea anterior a start_date
+    def validate(self, attrs):
+        start = attrs.get("start_date")
+        end = attrs.get("end_date")
+        if start and end and end < start:
+            raise serializers.ValidationError(
+                {"end_date": "La fecha de fin no puede ser anterior a la fecha de inicio."}
+            )
+        return attrs
+
+
+# Serializa la subida de imagen de perfil del paciente
+class ProfileImageUploadSerializer(serializers.Serializer):
+    file = serializers.FileField()
+
+    # MIME types permitidos para imagen de perfil
+    ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp"]
+    MAX_SIZE = 5 * 1024 * 1024  # 5 MB
+
+    def validate_file(self, file):
+        if file.content_type not in self.ALLOWED_TYPES:
+            raise serializers.ValidationError(
+                f"Tipo de archivo no permitido. Use: {', '.join(self.ALLOWED_TYPES)}"
+            )
+        if file.size > self.MAX_SIZE:
+            raise serializers.ValidationError(
+                "El archivo no puede superar los 5 MB."
+            )
+        return file
+
+
 class MedicalProfileSerializer(serializers.ModelSerializer):
+    # Email del usuario dueño del perfil, solo lectura via relacion User
+    email = serializers.EmailField(source="user.email", read_only=True)
     imc = serializers.SerializerMethodField()
 
     class Meta:
         model = MedicalProfile
         fields = [
+            "email",
             "first_name",
             "last_name",
             "birthdate",
@@ -79,22 +125,31 @@ class MedicalProfileSerializer(serializers.ModelSerializer):
             "blood_type",
             "weight",
             "height",
-            "profile_image",
-            "allergies",
-            "chronic_conditions",
+            "profile_image_url",
+            "phone_number",
             "emergency_contact_name",
             "emergency_contact_phone",
+            "emergency_contact_email",
             "emergency_contact_relationship",
+            "relevant_clinical_information",
             "imc",
             "updated_at",
             "address",
+            "profile_image_bucket",
+            "profile_image_key",
             "relevance_type",
             "current_medications",
             "recent_medical_history",
+            "allergies",
+            "chronic_conditions",
         ]
         read_only_fields = [
+            "email",
             "updated_at",
             "imc",
+            "profile_image_url",
+            "profile_image_bucket",
+            "profile_image_key",
         ]
     #Integracion validadores campos de perfil medico.
     def validate_first_name(self, value):
@@ -138,7 +193,7 @@ class MedicalProfileSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError(f"Tipo de sangre no válido. Opciones: {', '.join(valid_types)}.")
         return value
 
-    def validate_profile_image(self, value):
+    def validate_profile_image_url(self, value):
         if not value:
             return value
         try:
@@ -167,14 +222,43 @@ class MedicalProfileSerializer(serializers.ModelSerializer):
                 raise serializers.ValidationError("La altura no puede ser mayor a 250 cm.")
         return value
 
+    # Valida formato de telefono: numeros, +, espacios, largo 8-20
+    def validate_phone_number(self, value):
+        return UserValidator.validate_phone_format(value, "phone_number")
+
     def validate_emergency_contact_phone(self, value):
-        if not value:
+        return UserValidator.validate_phone_format(value, "emergency_contact_phone")
+
+    # Valida cada medicamento del array usando MedicationSerializer
+    def validate_current_medications(self, value):
+        if value is None:
             return value
-        clean_value = value.replace("-", "").replace(" ", "")
-        pattern = r'^(\+56)?9\d{8}$'
-        if not re.match(pattern, clean_value):
-            raise serializers.ValidationError("Formato de teléfono no válido. Ejemplo: +56912345678 o 912345678")
-        return value
+        if not isinstance(value, list):
+            raise serializers.ValidationError("El campo 'current_medications' debe ser un array JSON.")
+        serializer = MedicationSerializer(data=value, many=True)
+        serializer.is_valid(raise_exception=True)
+        return serializer.validated_data
+
+    # Valida historial medico reciente: title requerido, type y description opcionales
+    def validate_recent_medical_history(self, value):
+        schema = {
+            "title":       {"required": True, "max_length": 100},
+            "type":        {"max_length": 50},
+            "description": {"max_length": 500},
+        }
+        return UserValidator.validate_json_list_of_dicts(value, "recent_medical_history", schema)
+
+    # Lista de strings, cada uno max 50 caracteres
+    def validate_relevance_type(self, value):
+        return UserValidator.validate_json_list_of_strings(value, "relevance_type", max_length=50)
+
+    # Lista de strings, cada uno max 100 caracteres
+    def validate_allergies(self, value):
+        return UserValidator.validate_json_list_of_strings(value, "allergies", max_length=100)
+
+    # Lista de strings, cada uno max 100 caracteres
+    def validate_chronic_conditions(self, value):
+        return UserValidator.validate_json_list_of_strings(value, "chronic_conditions", max_length=100)
 
     def get_imc(self, obj):
         if obj.weight and obj.height:

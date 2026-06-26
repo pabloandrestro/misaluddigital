@@ -4,21 +4,17 @@ from rest_framework import serializers
 
 
 class UserValidator:
-    # ------------------------------------------
-    # normalizadores de email y rut
-    # ------------------------------------------
+
     @staticmethod
     def normalize_email(email):
-        # valida que el correo no venga vacio
+        
         if not email:
             raise serializers.ValidationError("El email es requerido")
 
-        # elimina espacios al inicio/final y deja el correo en minusculas
         return email.lower().strip()
 
     @staticmethod
     def normalize_run(rut):
-        # valida que el rut no venga vacio
         if not rut:
             raise serializers.ValidationError("El rut es requerido")
 
@@ -39,9 +35,7 @@ class UserValidator:
 
         return rut
 
-    # ------------------------
-    # validadores de logica
-    # ------------------------
+
     @staticmethod
     def validate_email_format(email):
         # primero normalizamos el correo para trabajar siempre con el mismo formato
@@ -144,9 +138,87 @@ class UserValidator:
 
         return password
 
+    # Valida que value sea un array JSON basico
+    @staticmethod
+    def validate_json_list(value, field_name=""):
+        if value is None:
+            return value
+        if not isinstance(value, list):
+            raise serializers.ValidationError(
+                f"El campo '{field_name}' debe ser un array JSON."
+            )
+        return value
+
+    # Valida un array de strings con max_length por elemento
+    @staticmethod
+    def validate_json_list_of_strings(value, field_name="", max_length=100):
+        if value is None:
+            return value
+        if not isinstance(value, list):
+            raise serializers.ValidationError(
+                f"El campo '{field_name}' debe ser un array JSON."
+            )
+        for i, item in enumerate(value):
+            if not isinstance(item, str):
+                raise serializers.ValidationError(
+                    f"'{field_name}[{i}]' debe ser un string."
+                )
+            if len(item) > max_length:
+                raise serializers.ValidationError(
+                    f"'{field_name}[{i}]' no puede tener más de {max_length} caracteres."
+                )
+        return value
+
+    # Valida un array de dicts aplicando un schema de reglas (required, max_length, type)
+    @staticmethod
+    def validate_json_list_of_dicts(value, field_name="", schema=None):
+        if value is None:
+            return value
+        if not isinstance(value, list):
+            raise serializers.ValidationError(
+                f"El campo '{field_name}' debe ser un array JSON."
+            )
+        for i, item in enumerate(value):
+            if not isinstance(item, dict):
+                raise serializers.ValidationError(
+                    f"'{field_name}[{i}]' debe ser un objeto JSON."
+                )
+            if schema:
+                for key, rules in schema.items():
+                    val = item.get(key)
+                    if rules.get("required") and (val is None or val == ""):
+                        raise serializers.ValidationError(
+                            f"'{field_name}[{i}].{key}' es obligatorio."
+                        )
+                    if val is not None and isinstance(val, str) and "max_length" in rules:
+                        if len(val) > rules["max_length"]:
+                            raise serializers.ValidationError(
+                                f"'{field_name}[{i}].{key}' no puede tener más de {rules['max_length']} caracteres."
+                            )
+                    if val is not None and rules.get("type") == "bool" and not isinstance(val, bool):
+                        raise serializers.ValidationError(
+                            f"'{field_name}[{i}].{key}' debe ser booleano."
+                        )
+        return value
+
+    # Valida telefono chileno: permite numeros, + y espacios, largo limpio 8-20
+    @staticmethod
+    def validate_phone_format(phone, field_name="teléfono"):
+        if not phone:
+            return phone
+        if not re.match(r'^[\d+\s]+$', phone):
+            raise serializers.ValidationError(
+                f"El campo '{field_name}' solo puede contener números, '+' y espacios."
+            )
+        clean = phone.replace(" ", "").replace("+", "")
+        if len(clean) < 8 or len(clean) > 20:
+            raise serializers.ValidationError(
+                f"El campo '{field_name}' debe tener entre 8 y 20 dígitos."
+            )
+        return phone
+
     @staticmethod
     def validate_passwords_match(password, confirm_password):
-        # valida que ambas contrasenas sean iguales
         if password != confirm_password:
             raise serializers.ValidationError("Las contrasenas no coinciden.")
 
