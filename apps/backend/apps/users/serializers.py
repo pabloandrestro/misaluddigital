@@ -93,20 +93,8 @@ class MedicationSerializer(serializers.Serializer):
 class ProfileImageUploadSerializer(serializers.Serializer):
     file = serializers.FileField()
 
-    # MIME types permitidos para imagen de perfil
-    ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp"]
-    MAX_SIZE = 5 * 1024 * 1024  # 5 MB
-
     def validate_file(self, file):
-        if file.content_type not in self.ALLOWED_TYPES:
-            raise serializers.ValidationError(
-                f"Tipo de archivo no permitido. Use: {', '.join(self.ALLOWED_TYPES)}"
-            )
-        if file.size > self.MAX_SIZE:
-            raise serializers.ValidationError(
-                "El archivo no puede superar los 5 MB."
-            )
-        return file
+        return UserValidator.validate_profile_image_file(file)
 
 
 class MedicalProfileSerializer(serializers.ModelSerializer):

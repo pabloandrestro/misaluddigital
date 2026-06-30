@@ -100,67 +100,110 @@ class MedicalProfileRepository:
 
         return profile
 
-    # todo: implementar cuando profile_image_bucket, profile_image_key y profile_image_url existan en el modelo
     @staticmethod
     def update_profile_image_metadata(profile, profile_image_bucket, profile_image_key, profile_image_url=""):
-        pass
+        # Guarda la referencia del archivo subido sin almacenar la imagen en PostgreSQL.
+        profile.profile_image_bucket = profile_image_bucket or ""
+        profile.profile_image_key = profile_image_key or ""
+        profile.profile_image_url = profile_image_url or ""
+        profile.profile_image = profile_image_url or ""
+        profile.save(update_fields=[
+            "profile_image_bucket",
+            "profile_image_key",
+            "profile_image_url",
+            "profile_image",
+            "updated_at",
+        ])
 
-    # todo: implementar limpieza de metadata de foto de perfil
+        return profile
+
     @staticmethod
     def clear_profile_image_metadata(profile):
-        pass
+        # Limpia la foto cuando el usuario elimina o reemplaza su imagen.
+        profile.profile_image_bucket = ""
+        profile.profile_image_key = ""
+        profile.profile_image_url = ""
+        profile.profile_image = ""
+        profile.save(update_fields=[
+            "profile_image_bucket",
+            "profile_image_key",
+            "profile_image_url",
+            "profile_image",
+            "updated_at",
+        ])
 
-    # todo: implementar lectura de metadata de foto de perfil
+        return profile
+
     @staticmethod
     def get_profile_image_metadata(profile):
-        pass
+        # Centraliza la lectura de metadata para respuestas y servicios.
+        return {
+            "profile_image_bucket": profile.profile_image_bucket,
+            "profile_image_key": profile.profile_image_key,
+            "profile_image_url": profile.profile_image_url,
+            "profile_image": profile.profile_image,
+        }
 
-    # todo: implementar lectura generica de jsonfield por nombre de campo
     @staticmethod
     def get_json_field(profile, field_name):
-        pass
+        # Evita repetir lecturas defensivas en campos JSON del perfil.
+        if not hasattr(profile, field_name):
+            return []
 
-    # todo: implementar escritura generica de jsonfield por nombre de campo
+        value = getattr(profile, field_name)
+        return value if value is not None else []
+
     @staticmethod
     def set_json_field(profile, field_name, value):
-        pass
+        # Actualiza campos JSON reutilizables manteniendo listas vacias por defecto.
+        if not hasattr(profile, field_name):
+            return profile
 
-    # todo: implementar cuando current_medications exista en el modelo
+        setattr(profile, field_name, value or [])
+        profile.save(update_fields=[field_name, "updated_at"])
+
+        return profile
+
     @staticmethod
     def get_current_medications(profile):
-        pass
+        return MedicalProfileRepository.get_json_field(profile, "current_medications")
 
-    # todo: implementar cuando current_medications exista en el modelo
     @staticmethod
     def set_current_medications(profile, medications):
-        pass
+        return MedicalProfileRepository.set_json_field(
+            profile,
+            "current_medications",
+            medications,
+        )
 
-    # todo: implementar cuando recent_medical_history exista en el modelo
     @staticmethod
     def get_recent_medical_history(profile):
-        pass
+        return MedicalProfileRepository.get_json_field(profile, "recent_medical_history")
 
-    # todo: implementar cuando recent_medical_history exista en el modelo
     @staticmethod
     def set_recent_medical_history(profile, history):
-        pass
+        return MedicalProfileRepository.set_json_field(
+            profile,
+            "recent_medical_history",
+            history,
+        )
 
-    # todo: implementar cuando allergies exista en el modelo
     @staticmethod
     def get_allergies(profile):
-        pass
+        return MedicalProfileRepository.get_json_field(profile, "allergies")
 
-    # todo: implementar cuando allergies exista en el modelo
     @staticmethod
     def set_allergies(profile, allergies):
-        pass
+        return MedicalProfileRepository.set_json_field(profile, "allergies", allergies)
 
-    # todo: implementar cuando chronic_conditions exista en el modelo
     @staticmethod
     def get_chronic_conditions(profile):
-        pass
+        return MedicalProfileRepository.get_json_field(profile, "chronic_conditions")
 
-    # todo: implementar cuando chronic_conditions exista en el modelo
     @staticmethod
     def set_chronic_conditions(profile, chronic_conditions):
-        pass
+        return MedicalProfileRepository.set_json_field(
+            profile,
+            "chronic_conditions",
+            chronic_conditions,
+        )

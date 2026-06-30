@@ -1,9 +1,13 @@
 import re
+from pathlib import Path
 
 from rest_framework import serializers
 
 
 class UserValidator:
+    PROFILE_IMAGE_ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp"]
+    PROFILE_IMAGE_ALLOWED_EXTENSIONS = [".jpg", ".jpeg", ".png", ".webp"]
+    PROFILE_IMAGE_MAX_SIZE = 5 * 1024 * 1024
 
     @staticmethod
     def normalize_email(email):
@@ -223,3 +227,32 @@ class UserValidator:
             raise serializers.ValidationError("Las contrasenas no coinciden.")
 
         return True
+
+    @staticmethod
+    def validate_profile_image_file(file):
+        # Valida la imagen antes de enviarla a storage.
+        if not file:
+            raise serializers.ValidationError("Debe adjuntar una imagen de perfil.")
+
+        if file.content_type not in UserValidator.PROFILE_IMAGE_ALLOWED_TYPES:
+            raise serializers.ValidationError(
+                "Tipo de imagen no permitido. Use JPG, PNG o WEBP."
+            )
+
+        extension = Path(file.name).suffix.lower()
+        if extension not in UserValidator.PROFILE_IMAGE_ALLOWED_EXTENSIONS:
+            raise serializers.ValidationError(
+                "Extension de imagen no permitida. Use .jpg, .jpeg, .png o .webp."
+            )
+
+        if file.size > UserValidator.PROFILE_IMAGE_MAX_SIZE:
+            raise serializers.ValidationError(
+                "La imagen de perfil no puede superar los 5 MB."
+            )
+
+        if len(file.name) > 180:
+            raise serializers.ValidationError(
+                "El nombre del archivo es demasiado largo."
+            )
+
+        return file

@@ -58,6 +58,8 @@ class MedicalProfile(models.Model):
     blood_type             = models.CharField(max_length=3, choices=BLOOD_TYPES, blank=True)
     weight                 = models.IntegerField(null=True, blank=True)
     height                 = models.IntegerField(null=True, blank=True)
+    # Mantiene compatibilidad con la columna antigua de Supabase.
+    profile_image          = models.URLField(blank=True, default="")
     profile_image_url          = models.URLField(blank=True)
     profile_image_bucket   = models.CharField(max_length=150, blank=True, default="")
     profile_image_key      = models.CharField(max_length=500, blank=True, default="")
