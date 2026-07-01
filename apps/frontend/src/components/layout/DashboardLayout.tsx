@@ -1,6 +1,7 @@
+import { useState } from "react";
 import { Outlet, NavLink, useNavigate } from "react-router-dom";
 import { useAuthStore } from "@/lib/store/auth.store";
-import { UserCircle,LayoutDashboard, FolderOpen, User, Sparkles, Settings, LogOut, Bell, HelpCircle, Search, } from "lucide-react";
+import { UserCircle, LayoutDashboard, FolderOpen, User, Sparkles, Settings, LogOut, Bell, HelpCircle, Search, Menu, X } from "lucide-react";
 import logoWhite from "@/assets/img/logo-white.png";
 
 const NAV = [
@@ -8,7 +9,7 @@ const NAV = [
   { path: "/documents",   label: "Mis documentos",  icon: FolderOpen },
   { path: "/profile",     label: "Perfil médico",   icon: User },
   { path: "/ai-insights", label: "Análisis IA",     icon: Sparkles },
-  { path: "/settings",     label: "Configuración",   icon: Settings },
+  { path: "/settings",    label: "Configuración",   icon: Settings },
 ];
 
 const FOOTER_LINKS = ["Privacidad", "Términos de Uso", "Contacto", "Ayuda"];
@@ -17,15 +18,35 @@ export default function DashboardLayout() {
   const user     = useAuthStore((s) => s.user);
   const logout   = useAuthStore((s) => s.logout);
   const navigate = useNavigate();
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   return (
     <div className="flex min-h-screen bg-gray-50">
 
-      {/* SIDEBAR */}
-      <aside className="w-52 flex flex-col flex-shrink-0 min-h-screen" style={{ background: "linear-gradient(to bottom, var(--color-primary-dark), var(--color-primary-mid))" }}>
+      {/* OVERLAY MÓVIL */}
+      {sidebarOpen && (
+        <div
+          className="fixed inset-0 bg-black/40 z-40 md:hidden"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
 
-        {/* Logo */}
-        <div className="p-4 border-b border-primary-mid flex flex-col items-center gap-1">
+      {/* SIDEBAR */}
+      <aside
+        className={`w-52 flex flex-col flex-shrink-0 min-h-screen fixed md:static z-50 transition-transform duration-200 ${
+          sidebarOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
+        }`}
+        style={{ background: "linear-gradient(to bottom, var(--color-primary-dark), var(--color-primary-mid))" }}
+      >
+
+        {/* Logo + botón cerrar (móvil) */}
+        <div className="p-4 border-b border-primary-mid flex flex-col items-center gap-1 relative">
+          <button
+            onClick={() => setSidebarOpen(false)}
+            className="absolute top-3 right-3 text-white md:hidden"
+          >
+            <X size={18} />
+          </button>
           <img src={logoWhite} alt="Saludaldia" className="w-20 h-16 object-contain" />
           <p className="text-primary-text text-[10px] uppercase tracking-wide text-center">
             Historial médico digital
@@ -39,6 +60,7 @@ export default function DashboardLayout() {
               key={label}
               to={path}
               end={path === "/"}
+              onClick={() => setSidebarOpen(false)}
               className={({ isActive }) =>
                 `flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-colors ${
                   isActive
@@ -81,19 +103,28 @@ export default function DashboardLayout() {
       </aside>
 
       {/* COLUMNA DERECHA */}
-      <div className="flex flex-col flex-1 overflow-hidden">
+      <div className="flex flex-col flex-1 overflow-hidden min-w-0">
 
         {/* HEADER */}
-        <header className="h-14 bg-white border-b border-gray-100 flex items-center px-5 gap-3 flex-shrink-0">
-          <div className="flex items-center gap-2 bg-gray-100 rounded-full px-4 py-2 flex-1 max-w-lg">
-            <Search size={14} className="text-gray-400" />
+        <header className="h-14 bg-white border-b border-gray-100 flex items-center px-3 md:px-5 gap-2 md:gap-3 flex-shrink-0">
+
+          {/* Botón hamburguesa (solo móvil) */}
+          <button
+            onClick={() => setSidebarOpen(true)}
+            className="md:hidden w-8 h-8 flex items-center justify-center text-gray-600 flex-shrink-0"
+          >
+            <Menu size={20} />
+          </button>
+
+          <div className="flex items-center gap-2 bg-gray-100 rounded-full px-3 md:px-4 py-2 flex-1 max-w-lg min-w-0">
+            <Search size={14} className="text-gray-400 flex-shrink-0" />
             <input
               type="text"
-              placeholder="Buscar documentos, recetas o doctores..."
-              className="bg-transparent outline-none text-sm text-gray-700 placeholder-gray-400 w-full"
+              placeholder="Buscar..."
+              className="bg-transparent outline-none text-sm text-gray-700 placeholder-gray-400 w-full min-w-0"
             />
           </div>
-          <div className="ml-auto flex gap-2">
+          <div className="ml-auto flex gap-2 flex-shrink-0">
             <button className="w-8 h-8 rounded-full border border-gray-200 flex items-center justify-center text-gray-500 hover:bg-gray-50">
               <Bell size={15} />
             </button>
@@ -109,10 +140,10 @@ export default function DashboardLayout() {
         </main>
 
         {/* FOOTER */}
-        <footer className="bg-white border-t border-gray-100 px-5 py-3 flex items-center gap-4 flex-shrink-0">
+        <footer className="bg-white border-t border-gray-100 px-3 md:px-5 py-3 flex flex-col md:flex-row items-center gap-2 md:gap-4 flex-shrink-0 text-center md:text-left">
           <span className="text-primary-mid text-xs font-semibold">Saludaldia</span>
           <span className="text-gray-400 text-xs">© 2026 Saludaldia — Seguridad de Datos Protegida</span>
-          <div className="flex gap-4 ml-auto">
+          <div className="flex gap-4 md:ml-auto flex-wrap justify-center">
             {FOOTER_LINKS.map((link) => (
               <a key={link} href="#" className="text-gray-500 text-xs hover:text-primary-mid transition-colors">
                 {link}

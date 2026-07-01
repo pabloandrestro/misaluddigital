@@ -32,12 +32,12 @@ export default function DashboardPage() {
   ];
 
   return (
-    <div className="p-6">
+    <div className="p-4 md:p-6">
 
       {/* Bienvenida + botones */}
-      <div className="flex items-start justify-between mb-6">
+      <div className="flex flex-col md:flex-row md:items-start justify-between gap-4 mb-6">
         <div>
-          <h1 className="text-2xl font-semibold text-gray-900">
+          <h1 className="text-xl md:text-2xl font-semibold text-gray-900">
             Bienvenido de nuevo,{" "}
             <span className="text-primary-mid">{user?.name || "Usuario"}</span>
           </h1>
@@ -45,31 +45,31 @@ export default function DashboardPage() {
             Aquí está el resumen de tu actividad médica reciente.
           </p>
         </div>
-        <div className="flex gap-3">
-          <button className="flex items-center gap-2 px-4 py-2 rounded-full border border-primary-mid text-primary-mid text-sm hover:bg-primary-light transition-colors">
+        <div className="flex flex-col sm:flex-row gap-3">
+          <button className="flex items-center justify-center gap-2 px-4 py-2 rounded-full border border-primary-mid text-primary-mid text-sm hover:bg-primary-light transition-colors">
             <Share2 size={15} />
             Compartir historial
           </button>
-          <button className="flex items-center gap-2 px-4 py-2 rounded-full bg-primary-mid text-white text-sm hover:bg-primary-dark transition-colors">
+          <button className="flex items-center justify-center gap-2 px-4 py-2 rounded-full bg-primary-mid text-white text-sm hover:bg-primary-dark transition-colors">
             <Upload size={15} />
             Subir documento
           </button>
         </div>
       </div>
 
-      {/* Layout dos columnas */}
-      <div className="flex gap-6 items-start">
+      {/* Layout responsivo: columna en móvil, dos columnas en desktop */}
+      <div className="flex flex-col lg:flex-row gap-6 items-start">
 
         {/* COLUMNA IZQUIERDA */}
-        <div className="flex-1 min-w-0">
+        <div className="flex-1 min-w-0 w-full">
 
           {/* Tarjetas de resumen */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
             {STATS.map(({ label, value, icono, border }) => (
             <div key={label} className={`bg-white rounded-xl shadow-md p-4 flex flex-col items-center gap-2 border border-gray-100 border-b-4 ${border}`}>
-              <img src={icono} alt={label} className="w-12 h-12 object-contain" />
-              <p className="text-2xl font-semibold text-gray-900">{value}</p>
-              <p className="text-sm text-gray-400">{label}</p>
+              <img src={icono} alt={label} className="w-10 h-10 md:w-12 md:h-12 object-contain" />
+              <p className="text-xl md:text-2xl font-semibold text-gray-900">{value}</p>
+              <p className="text-xs md:text-sm text-gray-400 text-center">{label}</p>
             </div>
           ))}
           </div>
@@ -78,12 +78,12 @@ export default function DashboardPage() {
           <div className="bg-white rounded-xl border border-gray-100 shadow-md p-4">
 
             {/* Tabs */}
-            <div className="flex gap-2 mb-4">
+            <div className="flex gap-2 mb-4 overflow-x-auto pb-1">
               {CATEGORIAS.map((tab) => (
                 <button
                   key={tab}
                   onClick={() => setActiveTab(tab)}
-                  className={`px-4 py-1.5 rounded-full text-sm transition-colors ${
+                  className={`px-4 py-1.5 rounded-full text-sm transition-colors flex-shrink-0 ${
                     activeTab === tab
                       ? "bg-primary-mid text-white font-medium"
                       : "text-gray-500 hover:bg-gray-100"
@@ -97,19 +97,19 @@ export default function DashboardPage() {
             {/* Filas */}
             <div className="divide-y divide-gray-50">
               {DOCUMENTOS.filter((doc) => activeTab === "Todos" || doc.tipo === activeTab).map((doc) => (
-                <div key={doc.id} className="flex items-center gap-4 py-3">
+                <div key={doc.id} className="flex items-center gap-2 md:gap-4 py-3">
                   <div className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center text-sm flex-shrink-0">
                     {doc.icono}
                   </div>
-                  <p className="flex-1 text-sm text-gray-700 font-medium">{doc.nombre}</p>
-                  <span className={`px-3 py-0.5 rounded-full text-xs font-medium ${doc.color}`}>
+                  <p className="flex-1 min-w-0 text-sm text-gray-700 font-medium truncate">{doc.nombre}</p>
+                  <span className={`hidden sm:inline px-3 py-0.5 rounded-full text-xs font-medium flex-shrink-0 ${doc.color}`}>
                     {doc.tipo}
                   </span>
-                  <p className="text-xs text-gray-400 w-24 text-right">{doc.fecha}</p>
-                  <div className="flex gap-3 text-gray-400">
+                  <p className="hidden md:block text-xs text-gray-400 w-24 text-right flex-shrink-0">{doc.fecha}</p>
+                  <div className="flex gap-2 md:gap-3 text-gray-400 flex-shrink-0">
                     <button className="hover:text-primary-mid transition-colors"><Download size={15} /></button>
-                    <button className="hover:text-primary-mid transition-colors"><ShareIcon size={15} /></button>
-                    <button className="hover:text-primary-mid transition-colors"><Eye size={15} /></button>
+                    <button className="hidden sm:block hover:text-primary-mid transition-colors"><ShareIcon size={15} /></button>
+                    <button className="hidden sm:block hover:text-primary-mid transition-colors"><Eye size={15} /></button>
                     <button className="hover:text-red-400 transition-colors"><Trash2 size={15} /></button>
                   </div>
                 </div>
@@ -127,10 +127,10 @@ export default function DashboardPage() {
         </div>
 
         {/* COLUMNA DERECHA */}
-        <div className="w-64 flex-shrink-0 flex flex-col gap-4 self-start">
+        <div className="w-full lg:w-64 flex-shrink-0 flex flex-col gap-4">
 
           {/* Consejo del día */}
-          <div className="bg-white rounded-xl border border-gray-100 shadow-md p-4 min-h-70">
+          <div className="bg-white rounded-xl border border-gray-100 shadow-md p-4">
             <div className="flex items-center gap-2 mb-3">
               <Lightbulb size={18} className="text-yellow-400" />
               <p className="text-sm font-medium text-gray-700">Consejo de hoy</p>
@@ -144,10 +144,9 @@ export default function DashboardPage() {
           </div>
 
           {/* Protege tu información */}
-          <div className="rounded-xl overflow-hidden text-white relative min-h-80" style={{ backgroundImage: `url(${fondoSeguridadImg})`, backgroundSize: "cover", backgroundPosition: "center" }}>
-           <div className="p-4 flex flex-col justify-between h-full min-h-80">
-            <div>
-              <div className="flex items-center gap-2 mb-2">
+          <div className="rounded-xl overflow-hidden text-white relative min-h-64 lg:min-h-80" style={{ backgroundImage: `url(${fondoSeguridadImg})`, backgroundSize: "cover", backgroundPosition: "center" }}>
+            <div className="p-4 flex flex-col gap-3">
+              <div className="flex items-center gap-2">
                 <ShieldCheck size={16} className="text-white" />
                 <p className="text-sm font-medium text-white">Protege tu información</p>
               </div>
@@ -155,10 +154,11 @@ export default function DashboardPage() {
                 Tu historial médico está cifrado y protegido. Solo tú decides quién puede verlo.
               </p>
             </div>
-            <button className="w-full py-2 rounded-lg bg-primary-mid text-white text-xs hover:bg-primary-accent transition-colors mt-2">
-              Ver más
-            </button>
-          </div>
+            <div className="absolute bottom-4 left-4 right-4">
+              <button className="w-full py-2.5 rounded-lg bg-primary-mid text-white text-xs font-medium hover:bg-primary-accent transition-colors">
+                Ver más
+              </button>
+            </div>
           </div>
         </div>
 

@@ -46,34 +46,34 @@ export default function ProfilePage() {
     if (user?.email) fetchProfile();
   }, [user?.email]);
 
-  if (loading) return <div className="p-6 text-gray-400 text-sm">Cargando perfil...</div>;
+  if (loading) return <div className="p-4 text-gray-400 text-sm">Cargando perfil...</div>;
 
   return (
-    <div className="p-6">
+    <div className="p-4 md:p-6">
 
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-start justify-between mb-6 gap-4">
         <div>
-          <h1 className="text-2xl font-semibold text-gray-900">Mi perfil</h1>
+          <h1 className="text-xl md:text-2xl font-semibold text-gray-900">Mi perfil</h1>
           <p className="text-sm text-gray-400 mt-1">Gestiona tu información personal y de salud.</p>
         </div>
-        <button className="flex items-center gap-2 px-4 py-2 rounded-lg border border-primary-mid text-primary-mid text-sm hover:bg-primary-light transition-colors">
+        <button className="flex items-center gap-2 px-3 md:px-4 py-2 rounded-lg border border-primary-mid text-primary-mid text-sm hover:bg-primary-light transition-colors flex-shrink-0">
           <Pencil size={14} strokeWidth={2.5}/>
-          Editar perfil
+          <span className="hidden sm:inline">Editar perfil</span>
         </button>
       </div>
 
       {/* Tarjeta principal */}
-      <div className="bg-white rounded-xl border border-gray-100 shadow-md p-6 mb-4">
-        <div className="flex gap-6">
+      <div className="bg-white rounded-xl border border-gray-100 shadow-md p-4 md:p-6 mb-4">
+        <div className="flex flex-col md:flex-row gap-6">
 
           {/* Avatar + nombre + contacto */}
-          <div className="flex items-start gap-4 flex-1 border-r border-gray-300 pr-6">
-            <div className="w-20 h-20 rounded-full bg-primary-mid flex items-center justify-center text-white text-2xl font-semibold flex-shrink-0">
+          <div className="flex items-start gap-4 flex-1 md:border-r md:border-gray-300 md:pr-6">
+            <div className="w-16 h-16 md:w-20 md:h-20 rounded-full bg-primary-mid flex items-center justify-center text-white text-xl md:text-2xl font-semibold flex-shrink-0">
               {profile?.first_name?.[0]}{profile?.last_name?.[0]}
             </div>
-            <div>
-              <h2 className="text-xl font-semibold text-gray-900 mb-2">
+            <div className="flex-1 min-w-0">
+              <h2 className="text-lg md:text-xl font-semibold text-gray-900 mb-2 truncate">
                 {profile?.first_name} {profile?.last_name}
               </h2>
               <div className="space-y-1">
@@ -81,7 +81,7 @@ export default function ProfilePage() {
                   <div className="w-7 h-7 rounded-full bg-blue-50 flex items-center justify-center flex-shrink-0">
                     <Mail size={14} strokeWidth={2.5} className="text-blue-600" />
                   </div>
-                  <span>{user?.email || "—"}</span>
+                  <span className="truncate">{user?.email || "—"}</span>
                 </div>
                 <div className="flex items-center gap-2 text-sm text-gray-500">
                   <div className="w-7 h-7 rounded-full bg-green-50 flex items-center justify-center flex-shrink-0">
@@ -100,7 +100,7 @@ export default function ProfilePage() {
           </div>
 
           {/* Información clínica relevante */}
-          <div className="flex-1  border-gray-400 pl-3">
+          <div className="flex-1 md:pl-3 border-t md:border-t-0 border-gray-200 pt-4 md:pt-0">
             <div className="flex items-center gap-2 mb-3">
               <div className="w-7 h-7 rounded-full bg-primary-light flex items-center justify-center flex-shrink-0">
                 <Heart size={15} strokeWidth={2.5} className="text-primary-mid" />
@@ -128,22 +128,22 @@ export default function ProfilePage() {
 
           {/* Grupo sanguíneo */}
           {profile?.blood_type && (
-            <div className="flex flex-col items-center justify-center border-l border-gray-300 pl-6 min-w-24">
-            <div className="bg-red-50 rounded-xl p-3 flex flex-col items-center">
-              <Droplet size={20} strokeWidth={2.5} className="text-red-400 mb-1" />
-              <p className="text-xs text-gray-500">Grupo sanguíneo</p>
-              <p className="text-2xl font-bold text-gray-900">{profile.blood_type}</p>
+            <div className="flex md:flex-col items-center md:justify-center border-t md:border-t-0 md:border-l border-gray-200 pt-4 md:pt-0 md:pl-6 md:min-w-24 gap-3 md:gap-0">
+              <div className="bg-red-50 rounded-xl p-3 flex flex-col items-center">
+                <Droplet size={20} strokeWidth={2.5} className="text-red-400 mb-1" />
+                <p className="text-xs text-gray-500">Grupo sanguíneo</p>
+                <p className="text-2xl font-bold text-gray-900">{profile.blood_type}</p>
+              </div>
             </div>
-          </div>
           )}
         </div>
       </div>
 
       {/* Grid 3 tarjetas */}
-      <div className="grid grid-cols-3 gap-4 mb-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
 
         {/* Información personal */}
-        <div className="bg-white rounded-xl border border-gray-100 shadow-md p-6">
+        <div className="bg-white rounded-xl border border-gray-100 shadow-md p-4 md:p-6">
           <div className="flex items-center gap-2 mb-4">
             <div className="w-7 h-7 rounded-full bg-primary-light flex items-center justify-center flex-shrink-0">
               <User size={15} strokeWidth={2.5} className="text-primary-mid" />
@@ -185,7 +185,7 @@ export default function ProfilePage() {
         </div>
 
         {/* Contacto de emergencia */}
-        <div className="bg-white rounded-xl border border-gray-100 shadow-md p-6">
+        <div className="bg-white rounded-xl border border-gray-100 shadow-md p-4 md:p-6">
           <div className="flex items-center gap-2 mb-4">
             <div className="w-7 h-7 rounded-full bg-primary-light flex items-center justify-center flex-shrink-0">
               <Phone size={15} strokeWidth={2.5} className="text-primary-mid" />
@@ -198,13 +198,13 @@ export default function ProfilePage() {
                 <div className="w-7 h-7 rounded-full bg-primary-light flex items-center justify-center text-primary-mid text-xs font-semibold flex-shrink-0">
                   {profile.emergency_contact_name[0]}
                 </div>
-                <p className="text-sm font-medium text-gray-900">{profile.emergency_contact_name}</p>
+                <p className="text-sm font-medium text-gray-900 truncate">{profile.emergency_contact_name}</p>
               </div>
               <div className="flex items-center gap-2 text-sm text-gray-500">
                 <div className="w-7 h-7 rounded-full bg-green-50 flex items-center justify-center flex-shrink-0">
                   <Phone size={13} strokeWidth={2.5} className="text-green-600" />
                 </div>
-                <span>{profile.emergency_contact_phone || "—"}</span>
+                <span className="truncate">{profile.emergency_contact_phone || "—"}</span>
               </div>
               <div className="flex items-center gap-2 text-sm text-gray-500">
                 <div className="w-7 h-7 rounded-full bg-blue-50 flex items-center justify-center flex-shrink-0">
@@ -219,7 +219,7 @@ export default function ProfilePage() {
         </div>
 
         {/* Medicamentos actuales */}
-        <div className="bg-white rounded-xl border border-gray-100 shadow-md p-6">
+        <div className="bg-white rounded-xl border border-gray-100 shadow-md p-4 md:p-6 sm:col-span-2 lg:col-span-1">
           <div className="flex items-center gap-2 mb-4">
             <div className="w-7 h-7 rounded-full bg-primary-light flex items-center justify-center flex-shrink-0">
               <Activity size={15} strokeWidth={2.5} className="text-primary-mid" />
@@ -235,7 +235,7 @@ export default function ProfilePage() {
       </div>
 
       {/* Historial clínico reciente */}
-      <div className="bg-white rounded-xl border border-gray-100 shadow-md p-6">
+      <div className="bg-white rounded-xl border border-gray-100 shadow-md p-4 md:p-6">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
             <div className="w-7 h-7 rounded-full bg-primary-light flex items-center justify-center flex-shrink-0">
