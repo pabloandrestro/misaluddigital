@@ -210,15 +210,27 @@ class UserValidator:
     def validate_phone_format(phone, field_name="teléfono"):
         if not phone:
             return phone
-        if not re.match(r'^[\d+\s]+$', phone):
-            raise serializers.ValidationError(
-                f"El campo '{field_name}' solo puede contener números, '+' y espacios."
-            )
-        clean = phone.replace(" ", "").replace("+", "")
+
+        phone = phone.strip()
+
+        # permitie numeros espacios y un + opcional solo al inicio
+        # que significa el regex: ^ inicio del texto
+        # \+? = un + opcional, pero solo al inicio
+        # [/d/s]+ = uno o mas numeros o espacios
+        # $ = fin del texto
+        if not re.match(r'^\+?[\d\s]+$', phone):
+            raise serializers.ValidationError(f"El campo '{field_name}' solo puede contener números, '+' y espacios.")
+
+        clean = phone.replace(" ", "")
+
+        if clean.startswith("+"):
+            clean = clean[1:]
+
         if len(clean) < 8 or len(clean) > 20:
             raise serializers.ValidationError(
                 f"El campo '{field_name}' debe tener entre 8 y 20 dígitos."
             )
+
         return phone
 
     @staticmethod

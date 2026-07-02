@@ -106,12 +106,10 @@ class MedicalProfileRepository:
         profile.profile_image_bucket = profile_image_bucket or ""
         profile.profile_image_key = profile_image_key or ""
         profile.profile_image_url = profile_image_url or ""
-        profile.profile_image = profile_image_url or ""
         profile.save(update_fields=[
             "profile_image_bucket",
             "profile_image_key",
             "profile_image_url",
-            "profile_image",
             "updated_at",
         ])
 
@@ -123,12 +121,10 @@ class MedicalProfileRepository:
         profile.profile_image_bucket = ""
         profile.profile_image_key = ""
         profile.profile_image_url = ""
-        profile.profile_image = ""
         profile.save(update_fields=[
             "profile_image_bucket",
             "profile_image_key",
             "profile_image_url",
-            "profile_image",
             "updated_at",
         ])
 
@@ -141,7 +137,6 @@ class MedicalProfileRepository:
             "profile_image_bucket": profile.profile_image_bucket,
             "profile_image_key": profile.profile_image_key,
             "profile_image_url": profile.profile_image_url,
-            "profile_image": profile.profile_image,
         }
 
     @staticmethod

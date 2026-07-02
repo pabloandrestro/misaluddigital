@@ -59,8 +59,7 @@ class MedicalProfile(models.Model):
     weight                 = models.IntegerField(null=True, blank=True)
     height                 = models.IntegerField(null=True, blank=True)
     # Mantiene compatibilidad con la columna antigua de Supabase.
-    profile_image          = models.URLField(blank=True, default="")
-    profile_image_url          = models.URLField(blank=True)
+    profile_image_url          = models.URLField(blank=True) # se elimina profile_image, debido a que es una columna anterior
     profile_image_bucket   = models.CharField(max_length=150, blank=True, default="")
     profile_image_key      = models.CharField(max_length=500, blank=True, default="")
     phone_number           = models.CharField(max_length=20, blank=True, default="")
