@@ -1,13 +1,16 @@
 import re
 from pathlib import Path
-
 from rest_framework import serializers
-
+from PIL import Image, UnidentifiedImageError
 
 class UserValidator:
     PROFILE_IMAGE_ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp"]
     PROFILE_IMAGE_ALLOWED_EXTENSIONS = [".jpg", ".jpeg", ".png", ".webp"]
     PROFILE_IMAGE_MAX_SIZE = 5 * 1024 * 1024
+    PROFILE_IMAGE_MIN_WIDTH = 300
+    PROFILE_IMAGE_MIN_HEIGHT = 300
+    PROFILE_IMAGE_MAX_WIDTH = 1024
+    PROFILE_IMAGE_MAX_HEIGHT = 1024
 
     @staticmethod
     def normalize_email(email):
@@ -265,6 +268,33 @@ class UserValidator:
         if len(file.name) > 180:
             raise serializers.ValidationError(
                 "El nombre del archivo es demasiado largo."
+            )
+
+        UserValidator.validate_profile_image_resolution(file)
+
+        return file
+
+    @staticmethod
+    def validate_profile_image_resolution(file):
+        # valida ancho y alto de la imagen
+        try:
+            image = Image.open(file)
+            width, height = image.size
+            file.seek(0)
+
+        except (UnidentifiedImageError, OSError):
+            raise serializers.ValidationError(
+                "El archivo no es una imagen valida."
+            )
+
+        if width < UserValidator.PROFILE_IMAGE_MIN_WIDTH or height < UserValidator.PROFILE_IMAGE_MIN_HEIGHT:
+            raise serializers.ValidationError(
+                "La imagen debe tener al menos 300x300 pixeles."
+            )
+
+        if width > UserValidator.PROFILE_IMAGE_MAX_WIDTH or height > UserValidator.PROFILE_IMAGE_MAX_HEIGHT:
+            raise serializers.ValidationError(
+                "La imagen no debe superar 1024x1024 pixeles."
             )
 
         return file

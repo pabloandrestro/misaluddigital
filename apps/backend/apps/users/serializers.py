@@ -91,9 +91,9 @@ class MedicationSerializer(serializers.Serializer):
 
 # Serializa la subida de imagen de perfil del paciente
 class ProfileImageUploadSerializer(serializers.Serializer):
-    file = serializers.FileField()
+    image = serializers.FileField(required=True) # image = mas entendible , requerido=si
 
-    def validate_file(self, file):
+    def validate_image(self, file):
         return UserValidator.validate_profile_image_file(file)
 
 

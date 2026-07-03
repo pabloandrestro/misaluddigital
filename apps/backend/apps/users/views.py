@@ -5,8 +5,15 @@ from rest_framework.response import Response
 
 from .services import UserService
 from apps.users.services import AuthService
-from apps.users.serializers import UserSerializer, LoginSerializer, RegisterSerializer, MedicalProfileSerializer, \
-    PasswordResetSerializer, PasswordResetConfirmSerializer
+from apps.users.serializers import (
+    UserSerializer,
+    LoginSerializer,
+    RegisterSerializer,
+    MedicalProfileSerializer,
+    ProfileImageUploadSerializer,
+    PasswordResetSerializer,
+    PasswordResetConfirmSerializer,
+)
 
 
 # --------------------------
@@ -276,3 +283,83 @@ def me(request):
             "status": "error",
             "message": "Ocurrio un error interno al obtener el usuario.",
         },status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+@api_view(["GET","POST","DELETE"])
+@permission_classes([AllowAny])
+def profile_image(request):
+    email = request.query_params.get("email") or request.data.get("email")
+    rut = request.query_params.get("rut") or request.data.get("rut")
+
+    if not email and not rut:
+        return Response({
+            "status": "error",
+            "message" : "Debe de enviar email o rut para buscar el usuario.",
+        }, status=status.HTTP_400_BAD_REQUEST)
+
+    try:
+        user = UserService.get_user_by_identifier(
+            email=email,
+            rut=rut,
+        )
+
+        if not UserService.validate_user_exists(user):
+            return Response({
+                "status": "error",
+                "message": "Usuario no encontrado."
+            }, status=status.HTTP_404_NOT_FOUND)
+
+        if request.method == "GET":
+            image = UserService.get_profile_image_metadata(user)
+
+            return Response({
+                "status": "success",
+                "message": "Imagen de perfil obtenida correctamente.",
+                "image": image,
+            }, status=status.HTTP_200_OK)
+
+        if request.method == "POST":
+            serializer = ProfileImageUploadSerializer(data=request.data)
+
+            if not serializer.is_valid():
+                return Response({
+                    "status": "error",
+                    "message": "Datos invalidos.",
+                    "errors": serializer.errors,
+                }, status=status.HTTP_400_BAD_REQUEST)
+
+            file = serializer.validated_data["image"]
+
+            UserService.upload_user_profile_image(
+                user=user,
+                file=file,
+            )
+
+            image = UserService.get_profile_image_metadata(user)
+
+            return Response({
+                "status": "success",
+                "message": "Imagen de perfil actualizada correctamente.",
+                "image": image,
+            }, status=status.HTTP_200_OK)
+
+        if request.method == "DELETE":
+            UserService.delete_user_profile_image(user)
+
+            return Response({
+                "status": "success",
+                "message": "Imagen de perfil eliminada correctamente.",
+            }, status=status.HTTP_200_OK)
+
+    except serializers.ValidationError as error:
+        return Response({
+            "status": "error",
+            "message": "No se pudo procesar la imagen de perfil.",
+            "errors": error.detail,
+        }, status=status.HTTP_400_BAD_REQUEST)
+
+    except Exception as error:
+        return Response({
+            "status": "error",
+            "message": "Ocurrio un error interno al procesar la imagen de perfil.",
+            "error" : str(error),
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

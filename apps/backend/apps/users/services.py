@@ -1,6 +1,9 @@
 from rest_framework import serializers
 from .repositories import UserRepository, MedicalProfileRepository
-
+from pathlib import Path
+from uuid import uuid4
+from django.conf import settings
+from supabase import create_client
 
 class UserService:
     @staticmethod
@@ -194,6 +197,55 @@ class UserService:
 
         return MedicalProfileRepository.set_chronic_conditions(profile, chronic_conditions)
 
+    # para subir la imagen
+    @staticmethod
+    def upload_user_profile_image(user, file):
+        UserService.validate_user_instance(user)
+
+        if not file:
+            raise serializers.ValidationError({
+                "image" : "Debe de adjuntar una imagen."
+            })
+
+        current_metada = UserService.get_profile_image_metadata(user)
+
+        old_key = current_metada.get("profile_image_key")
+
+        image_data = ProfileStorageService.upload_profile_image(user, file)
+        try:
+            profile = UserService.update_profile_image_metadata(
+                user=user,
+                profile_image_bucket=image_data["profile_image_bucket"],
+                profile_image_key=image_data["profile_image_key"],
+                profile_image_url=image_data["profile_image_url"],
+            )
+
+        except Exception:
+            ProfileStorageService.delete_profile_image(
+                image_data["profile_image_key"]
+            )
+            raise
+        if old_key and old_key != image_data["profile_image_key"]:
+            try:
+                ProfileStorageService.delete_profile_image(old_key)
+            except Exception:
+                pass
+
+        return profile
+
+    # para eliminar la foto
+    @staticmethod
+    def delete_user_profile_image(user):
+        UserService.validate_user_instance(user)
+
+        current_metadata = UserService.get_profile_image_metadata(user)
+        current_key = current_metadata.get("profile_image_key")
+
+        if current_key:
+            ProfileStorageService.delete_profile_image(current_key)
+
+        return UserService.clear_profile_image_metadata(user)
+
 class AuthService:
     @staticmethod
     def login(email, password):
@@ -243,5 +295,87 @@ class AuthService:
 
         user.set_password(new_password)
         UserRepository.save_user(user)
+
+        return True
+
+# dedicado al storage de profile / medical profile
+class ProfileStorageService:
+    PROFILE_IMAGE_BUCKET = getattr(settings, "SUPABASE_PROFILE_IMAGE_BUCKET", "profile-images") # nombre del bucket de imagenes
+
+    @staticmethod
+    def get_supabase_client():
+        # url del supa y su key
+        supabase_url = getattr(settings, "SUPABASE_URL", None)
+        supabase_key = getattr(settings, "SUPABASE_SERVICE_KEY", None)
+
+        # si vienen vacias o nulas
+        if not supabase_url or not supabase_key:
+            raise serializers.ValidationError({
+                "storage" : "Faltan creedenciales de Supabase Storage."
+            })
+
+        return create_client(supabase_url, supabase_key)
+
+    # esta funcion genera la key para la subida
+    @staticmethod
+    def build_profile_image_key(user, file):
+        extension = Path(file.name).suffix.lower()
+        return f"{user.id}/{uuid4().hex}{extension}"
+
+    @staticmethod
+    def upload_profile_image(user, file):
+        # se valida el user
+        UserService.validate_user_instance(user)
+
+        # se valida que no venga null o blank
+        if not file:
+            raise serializers.ValidationError({
+                "image" : "Debe de adjuntar una imagen de perfil"
+            })
+
+        # se crea el cliente
+        supabase = ProfileStorageService.get_supabase_client()
+
+        # define el bucket
+        bucket = ProfileStorageService.PROFILE_IMAGE_BUCKET
+
+        # genera la key unica
+        key = ProfileStorageService.build_profile_image_key(user, file)
+
+        # cuando se hace read solo es como leerlo desde el incio al final, y devuelve un vacio
+        # por lo que el seek 0 mueve el puntero al inicio, lo lee, y lo vuelve a dejar al inicio.
+        # asi evitamos que deje un return NULL / Blank
+        file.seek(0)
+        file_content = file.read()
+        file.seek(0)
+
+        # lo sube al bucket
+        supabase.storage.from_(bucket).upload(
+            key,
+            file_content,
+            {"content-type": file.content_type,
+            "upsert": "true",},)
+
+        # obtiene la public url
+        public_url = supabase.storage.from_(bucket).get_public_url(key)
+
+        # retorna la metada para la bd
+        return {
+            "profile_image_bucket": bucket,
+            "profile_image_key": key,
+            "profile_image_url": public_url,
+        }
+
+     # Para eliminar la imagen del perfil
+    @staticmethod
+    def delete_profile_image(profile_image_key):
+        if not profile_image_key:
+            return False
+
+        supabase = ProfileStorageService.get_supabase_client()
+
+        supabase.storage.from_(
+            ProfileStorageService.PROFILE_IMAGE_BUCKET
+        ).remove([profile_image_key])
 
         return True
