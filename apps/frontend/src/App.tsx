@@ -4,6 +4,7 @@ import { useAuthStore } from "@/lib/store/auth.store";
 // Páginas auth
 import LoginPage       from "@/pages/auth/LoginPage";
 import SignupPage      from "@/pages/auth/SignupPage";
+import CompleteProfilePage from "@/pages/auth/CompleteProfilePage";
 
 // Páginas dashboard
 import DashboardPage   from "@/pages/dashboard/DashboardPage";
@@ -28,6 +29,7 @@ export default function App() {
       {/* Rutas públicas */}
       <Route path="/login"  element={<LoginPage />} />
       <Route path="/signup" element={<SignupPage />} />
+      <Route path="/complete-profile" element={<CompleteProfilePage />} />
       <Route path="/share/:token" element={<SharePage />} />
 
       {/* Rutas protegidas */}

@@ -39,7 +39,7 @@ class Document(models.Model):
         REPORT = "report", "Report"
         VACCINE = "vaccine", "Vaccine"
         OTHER = "other", "Other"
-
+    
     id = models.UUIDField(
         primary_key=True,
         default=uuid.uuid4,
@@ -103,6 +103,25 @@ class Document(models.Model):
 
     issuing_professional = models.CharField(
         max_length=255,
+        null=True,
+        blank=True
+    )
+
+    specialty = models.CharField(
+        max_length=255,
+        null=True,
+        blank=True
+    )
+
+    favorite = models.BooleanField(default=False)
+
+    bucket_name = models.CharField(
+        max_length=150,
+        null=True,
+        blank=True
+    )
+
+    extracted_text = models.TextField(
         null=True,
         blank=True
     )

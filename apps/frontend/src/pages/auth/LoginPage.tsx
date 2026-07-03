@@ -6,6 +6,8 @@ import { toast } from "sonner";
 import { api } from "@/lib/api/client";
 import { useAuthStore } from "@/lib/store/auth.store";
 import loginIllustration from "@/assets/img/login-illustration.png";
+import logoSaludaldia from "@/assets/logo/logo-saludaldia.png";
+import textoSaludaldia from "@/assets/logo/texto.png";
 
 const schema = z.object({
   email: z.string().email("Correo inválido"),
@@ -45,17 +47,22 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-white px-4 py-0">
-      <section className="w-full max-w-5xl rounded-[32px] border border-rose-100 bg-[#f7f7f7] p-4 md:p-6 lg:p-8">
+      <section className="w-full max-w-5xl rounded-[32px] border border-[var(--brand-subtle)] bg-[#f7f7f7] p-4 md:p-6 lg:p-8">
         <div className="grid items-center gap-10 lg:grid-cols-2">
           <div className="hidden h-full flex-col justify-between lg:flex">
             <div>
-              <div className="mb-14 flex items-center gap-3">
-                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-brand-700 text-2xl font-bold text-white">
-                  ✓
-                </div>
-                <span className="text-4xl font-bold tracking-tight text-brand-700">
-                  Saludaldia
-                </span>
+              <div className="mb-10 flex items-center gap-3">
+                <img
+                  src={logoSaludaldia}
+                  alt="Logo Saludaldia"
+                  className="h-12 w-auto object-contain"
+                />
+
+                <img
+                  src={textoSaludaldia}
+                  alt="Saludaldia"
+                  className="h-8 w-auto object-contain"
+                />
               </div>
 
               <h2 className="max-w-sm text-4xl font-bold leading-tight text-gray-800">
@@ -76,7 +83,7 @@ export default function LoginPage() {
             </div>
 
             <div className="flex items-center gap-3 text-sm font-semibold text-gray-600">
-              <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-brand-700 text-white">
+              <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-[var(--brand-dark)] text-white">
                 ✓
               </div>
               <span>Seguro</span>
@@ -106,7 +113,7 @@ export default function LoginPage() {
                   {...register("email")}
                   type="email"
                   placeholder="tu@correo.cl"
-                  className="w-full rounded-lg border border-gray-200 px-4 py-3 text-sm text-gray-800 outline-none transition focus:border-brand-700 focus:ring-2 focus:ring-brand-500/20"
+                  className="w-full rounded-lg border border-gray-200 px-4 py-3 text-sm text-gray-800 outline-none transition focus:border-[var(--brand-mid)] focus:ring-2 focus:ring-[var(--brand-subtle)]"
                 />
                 {errors.email && (
                   <p className="mt-1 text-xs text-red-500">
@@ -123,7 +130,7 @@ export default function LoginPage() {
                   {...register("password")}
                   type="password"
                   placeholder="Ingresa tu contraseña"
-                  className="w-full rounded-lg border border-gray-200 px-4 py-3 text-sm text-gray-800 outline-none transition focus:border-brand-700 focus:ring-2 focus:ring-brand-500/20"
+                  className="w-full rounded-lg border border-gray-200 px-4 py-3 text-sm text-gray-800 outline-none transition focus:border-[var(--brand-mid)] focus:ring-2 focus:ring-[var(--brand-subtle)]"
                 />
                 {errors.password && (
                   <p className="mt-1 text-xs text-red-500">
@@ -136,14 +143,14 @@ export default function LoginPage() {
                 <label className="flex items-center gap-2 font-semibold text-gray-800">
                   <input
                     type="checkbox"
-                    className="h-5 w-5 rounded border-brand-700 text-brand-700 focus:ring-brand-500"
+                    className="h-5 w-5 rounded border-gray-300 text-[var(--brand-dark)] focus:ring-[var(--brand-mid)]"
                   />
                   Recordarme
                 </label>
 
                 <Link
                   to="/forgot-password"
-                  className="font-medium text-brand-700 hover:underline"
+                  className="font-medium text-[var(--brand-dark)] hover:underline"
                 >
                   ¿Olvidaste tu contraseña?
                 </Link>
@@ -152,7 +159,7 @@ export default function LoginPage() {
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="w-full rounded-lg bg-brand-700 py-3 text-lg font-medium text-white transition hover:bg-brand-600 disabled:cursor-not-allowed disabled:opacity-60"
+                className="w-full rounded-lg bg-[var(--brand-dark)] py-3 text-lg font-medium text-white transition hover:bg-brand-600 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {isSubmitting ? "Ingresando..." : "Iniciar sesión"}
               </button>
@@ -162,7 +169,7 @@ export default function LoginPage() {
               ¿No tienes cuenta?{" "}
               <Link
                 to="/signup"
-                className="ml-4 font-medium text-brand-700 hover:underline"
+                className="ml-4 font-medium text-[var(--brand-dark)] hover:underline"
               >
                 Crear cuenta
               </Link>

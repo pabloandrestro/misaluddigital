@@ -1,0 +1,617 @@
+{
+  "info": {
+    "name": "Saludaldia Documents",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "01 - List document categories",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status 200', function () { pm.response.to.have.status(200); });",
+              "pm.test('Has categories', function () { const j = pm.response.json(); pm.expect(j.status).to.eql('success'); pm.expect(j.categories).to.be.an('array'); });"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/api/documents/categories/",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "documents",
+            "categories",
+            ""
+          ]
+        }
+      }
+    },
+    {
+      "name": "02 - List documents by email",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status 200', function () { pm.response.to.have.status(200); });",
+              "pm.test('Has documents', function () { const j = pm.response.json(); pm.expect(j.documents).to.be.an('array'); });"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/api/documents/?email={{test_email}}",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "documents",
+            ""
+          ],
+          "query": [
+            {
+              "key": "email",
+              "value": "{{test_email}}"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "03 - List documents by rut",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status 200', function () { pm.response.to.have.status(200); });"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/api/documents/?rut={{test_rut}}",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "documents",
+            ""
+          ],
+          "query": [
+            {
+              "key": "rut",
+              "value": "{{test_rut}}"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "04 - Create document receta medica",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status 201', function () { pm.response.to.have.status(201); });",
+              "const j = pm.response.json(); if (j.document_id) { pm.collectionVariables.set('document_id', j.document_id); } if (j.id) { pm.collectionVariables.set('document_id', j.id); }"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "formdata",
+          "formdata": [
+            {
+              "key": "title",
+              "value": "Receta medica prueba",
+              "type": "text"
+            },
+            {
+              "key": "document_type",
+              "value": "prescription",
+              "type": "text"
+            },
+            {
+              "key": "category_id",
+              "value": "{{category_id_recetas}}",
+              "type": "text"
+            },
+            {
+              "key": "document_date",
+              "value": "2026-06-23",
+              "type": "text"
+            },
+            {
+              "key": "medical_center",
+              "value": "Centro Medico Prueba",
+              "type": "text"
+            },
+            {
+              "key": "specialty",
+              "value": "Medicina general",
+              "type": "text"
+            },
+            {
+              "key": "doctor_name",
+              "value": "Dr. Prueba",
+              "type": "text"
+            },
+            {
+              "key": "favorite",
+              "value": "false",
+              "type": "text"
+            },
+            {
+              "key": "file",
+              "type": "file",
+              "src": ""
+            }
+          ]
+        },
+        "url": {
+          "raw": "{{base_url}}/api/documents/?email={{test_email}}",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "documents",
+            ""
+          ],
+          "query": [
+            {
+              "key": "email",
+              "value": "{{test_email}}"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "05 - Create document examen",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status 201', function () { pm.response.to.have.status(201); });",
+              "const j = pm.response.json(); if (j.document_id) { pm.collectionVariables.set('document_id', j.document_id); }"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "formdata",
+          "formdata": [
+            {
+              "key": "title",
+              "value": "Examen prueba",
+              "type": "text"
+            },
+            {
+              "key": "document_type",
+              "value": "exam",
+              "type": "text"
+            },
+            {
+              "key": "category_id",
+              "value": "{{category_id_examenes}}",
+              "type": "text"
+            },
+            {
+              "key": "document_date",
+              "value": "2026-06-23",
+              "type": "text"
+            },
+            {
+              "key": "medical_center",
+              "value": "Laboratorio Prueba",
+              "type": "text"
+            },
+            {
+              "key": "specialty",
+              "value": "Laboratorio",
+              "type": "text"
+            },
+            {
+              "key": "doctor_name",
+              "value": "Dr. Examen",
+              "type": "text"
+            },
+            {
+              "key": "favorite",
+              "value": "false",
+              "type": "text"
+            },
+            {
+              "key": "file",
+              "type": "file",
+              "src": ""
+            }
+          ]
+        },
+        "url": {
+          "raw": "{{base_url}}/api/documents/?email={{test_email}}",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "documents",
+            ""
+          ],
+          "query": [
+            {
+              "key": "email",
+              "value": "{{test_email}}"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "06 - Create document certificado",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status 201', function () { pm.response.to.have.status(201); });",
+              "const j = pm.response.json(); if (j.document_id) { pm.collectionVariables.set('document_id', j.document_id); }"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "formdata",
+          "formdata": [
+            {
+              "key": "title",
+              "value": "Certificado prueba",
+              "type": "text"
+            },
+            {
+              "key": "document_type",
+              "value": "report",
+              "type": "text"
+            },
+            {
+              "key": "category_id",
+              "value": "{{category_id_certificados}}",
+              "type": "text"
+            },
+            {
+              "key": "document_date",
+              "value": "2026-06-23",
+              "type": "text"
+            },
+            {
+              "key": "medical_center",
+              "value": "Clinica Prueba",
+              "type": "text"
+            },
+            {
+              "key": "specialty",
+              "value": "Medicina general",
+              "type": "text"
+            },
+            {
+              "key": "doctor_name",
+              "value": "Dr. Certificado",
+              "type": "text"
+            },
+            {
+              "key": "favorite",
+              "value": "false",
+              "type": "text"
+            },
+            {
+              "key": "file",
+              "type": "file",
+              "src": ""
+            }
+          ]
+        },
+        "url": {
+          "raw": "{{base_url}}/api/documents/?email={{test_email}}",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "documents",
+            ""
+          ],
+          "query": [
+            {
+              "key": "email",
+              "value": "{{test_email}}"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "07 - Get document detail",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status 200', function () { pm.response.to.have.status(200); });",
+              "pm.test('Has document', function () { pm.expect(pm.response.json().status).to.eql('success'); });"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/api/documents/{{document_id}}/?email={{test_email}}",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "documents",
+            "{{document_id}}",
+            ""
+          ],
+          "query": [
+            {
+              "key": "email",
+              "value": "{{test_email}}"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "08 - Delete document",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status 200', function () { pm.response.to.have.status(200); });",
+              "pm.test('Deleted', function () { pm.expect(pm.response.json().status).to.eql('success'); });"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "DELETE",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/api/documents/{{document_id}}/?email={{test_email}}",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "documents",
+            "{{document_id}}",
+            ""
+          ],
+          "query": [
+            {
+              "key": "email",
+              "value": "{{test_email}}"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "09 - Error sin email ni rut",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status 400', function () { pm.response.to.have.status(400); });",
+              "pm.test('Has error', function () { pm.expect(pm.response.json().status).to.eql('error'); });"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/api/documents/",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "documents",
+            ""
+          ]
+        }
+      }
+    },
+    {
+      "name": "10 - Error category_id invalido",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status 400', function () { pm.response.to.have.status(400); });"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "formdata",
+          "formdata": [
+            {
+              "key": "title",
+              "value": "Doc invalido",
+              "type": "text"
+            },
+            {
+              "key": "document_type",
+              "value": "other",
+              "type": "text"
+            },
+            {
+              "key": "category_id",
+              "value": "00000000-0000-0000-0000-000000000000",
+              "type": "text"
+            },
+            {
+              "key": "file",
+              "type": "file",
+              "src": ""
+            }
+          ]
+        },
+        "url": {
+          "raw": "{{base_url}}/api/documents/?email={{test_email}}",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "documents",
+            ""
+          ],
+          "query": [
+            {
+              "key": "email",
+              "value": "{{test_email}}"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "11 - Error sin archivo",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status 400', function () { pm.response.to.have.status(400); });"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "formdata",
+          "formdata": [
+            {
+              "key": "title",
+              "value": "Doc sin archivo",
+              "type": "text"
+            },
+            {
+              "key": "document_type",
+              "value": "other",
+              "type": "text"
+            },
+            {
+              "key": "category_id",
+              "value": "{{category_id_recetas}}",
+              "type": "text"
+            }
+          ]
+        },
+        "url": {
+          "raw": "{{base_url}}/api/documents/?email={{test_email}}",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "documents",
+            ""
+          ],
+          "query": [
+            {
+              "key": "email",
+              "value": "{{test_email}}"
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://127.0.0.1:8000"
+    },
+    {
+      "key": "test_email",
+      "value": "prueba_guion_test@email.com"
+    },
+    {
+      "key": "test_rut",
+      "value": "21502596-9"
+    },
+    {
+      "key": "document_id",
+      "value": ""
+    },
+    {
+      "key": "category_id_recetas",
+      "value": "e4667594-731f-40b5-a378-c38a669aff63"
+    },
+    {
+      "key": "category_id_examenes",
+      "value": "663ee4d2-c48c-4583-9677-c6baabfa553e"
+    },
+    {
+      "key": "category_id_certificados",
+      "value": "544042d5-f2e5-4a1d-9b13-843be674b55a"
+    }
+  ]
+}

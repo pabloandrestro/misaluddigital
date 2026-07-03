@@ -12,21 +12,17 @@
         {
           "listen": "prerequest",
           "script": {
-            "type": "text/javascript",
             "exec": [
-              "const suffix = Date.now().toString().slice(-7);",
-              "pm.collectionVariables.set(\"test_email\", `test${suffix}@email.com`);",
-              "pm.collectionVariables.set(\"test_rut\", `${suffix}K`);",
-              "pm.collectionVariables.set(\"test_name\", \"Usuario Prueba\");",
-              "pm.collectionVariables.set(\"test_password\", \"Password1!\");",
-              "pm.collectionVariables.set(\"new_password\", \"Password2!\");"
-            ]
+              ""
+            ],
+            "type": "text/javascript",
+            "packages": {},
+            "requests": {}
           }
         },
         {
           "listen": "test",
           "script": {
-            "type": "text/javascript",
             "exec": [
               "pm.test(\"Status 201\", function () {",
               "    pm.response.to.have.status(201);",
@@ -40,7 +36,10 @@
               "    pm.expect(json).to.have.property(\"user\");",
               "    pm.expect(json.user.email).to.eql(pm.collectionVariables.get(\"test_email\"));",
               "});"
-            ]
+            ],
+            "type": "text/javascript",
+            "packages": {},
+            "requests": {}
           }
         }
       ],
@@ -462,11 +461,22 @@
           }
         },
         "url": {
-          "raw": "{\n  \"email\": \"{{test_email}}\",\n  \"first_name\": \"Usuario\",\n  \"last_name\": \"Prueba\",\n  \"birthdate\": \"2000-01-01\",\n  \"genre\": \"Masculino\",\n  \"blood_type\": \"O+\",\n  \"weight\": 80,\n  \"height\": 175,\n  \"profile_image\": \"\",\n  \"allergies\": \"Ninguna\",\n  \"chronic_conditions\": \"Ninguna\",\n  \"emergency_contact_name\": \"Contacto Prueba\",\n  \"emergency_contact_phone\": \"+56912345678\"\n}",
+          "raw": "{{base_url}}/api/auth/profile/?email={{test_email}}",
           "host": [
-            "{\n  \"email\": \"{{test_email}}\",\n  \"first_name\": \"Usuario\",\n  \"last_name\": \"Prueba\",\n  \"birthdate\": \"2000-01-01\",\n  \"genre\": \"Masculino\",\n  \"blood_type\": \"O+\",\n  \"weight\": 80,\n  \"height\": 175,\n  \"profile_image\": \"\",\n  \"allergies\": \"Ninguna\",\n  \"chronic_conditions\": \"Ninguna\",\n  \"emergency_contact_name\": \"Contacto Prueba\",\n  \"emergency_contact_phone\""
+            "{{base_url}}"
           ],
-          "port": " \"+56912345678\"\n}"
+          "path": [
+            "api",
+            "auth",
+            "profile",
+            ""
+          ],
+          "query": [
+            {
+              "key": "email",
+              "value": "{{test_email}}"
+            }
+          ]
         },
         "description": "Generated from cURL: curl --request PUT --url '{{base_url}}/api/auth/profile/' --header 'Content-Type: application/json' --data '{\"email\":\"{{test_email}}\",\"first_name\":\"Usuario\",\"last_name\":\"Prueba\",\"birthdate\":\"2000-01-01\",\"genre\":\"Masculino\",\"blood_type\":\"O+\",\"weight\":80,\"height\":175,\"profile_image\":\"\",\"allergies\":\"Ninguna\",\"chronic_conditions\":\"Ninguna\",\"emergency_contact_name\":\"Contacto Prueba\",\"emergency_contact_phone\":\"+56912345678\"}'"
       },

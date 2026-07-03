@@ -1,186 +1,160 @@
-# TODO: implementar views de documents en Sprint 2-4
 from rest_framework import status, serializers
-
-from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
+from rest_framework.decorators import api_view, permission_classes, parser_classes
+from rest_framework.permissions import AllowAny
+from rest_framework.parsers import MultiPartParser, FormParser
 
-
-from .services import DocumentService
 from .serializers import (
     DocumentSerializer,
     CreateDocumentSerializer,
-    UpdateDocumentSerializer
+    DocumentCategorySerializer,
+)
+
+from .services import (
+    DocumentService,
+    DocumentCategoryService,
 )
 
 
-@api_view(["GET"])
-@permission_classes([IsAuthenticated])
-def health(request):
-    return Response({
-        "status": "ok",
-        "app": "documents"
-    })
-
-
-@api_view(["GET"])
-@permission_classes([IsAuthenticated])
-def document_list(request):
-
+@api_view(["GET", "POST"])
+@permission_classes([AllowAny])
+@parser_classes([MultiPartParser, FormParser])
+def documents_view(request):
     try:
-        documents = DocumentService.get_documents_by_user(request.user)
+        email = request.query_params.get("email")
+        rut = request.query_params.get("rut")
 
-        response_serializer = DocumentSerializer(
-            documents,
-            many=True
-        )
+        if request.method == "GET":
+            # listar documentos del usuario
+            documents = DocumentService.get_documents_by_identifier(
+                email=email,
+                rut=rut
+            )
 
-        return Response({
-            "status": "success",
-            "message": "Documentos obtenidos correctamente.",
-            "documents": response_serializer.data
-        }, status=status.HTTP_200_OK)
+            response_serializer = DocumentSerializer(documents, many=True)
 
-    except Exception:
-        return Response({
-            "status": "error",
-            "message": "Ocurrio un error interno al obtener los documentos."
-        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-
-@api_view(["GET"])
-@permission_classes([IsAuthenticated])
-def document_detail(request, document_id):
-
-    try:
-        document = DocumentService.get_document_by_id(document_id)
-
-        if not DocumentService.validate_document_exists(document):
             return Response({
-                "status": "error",
-                "message": "Documento no encontrado."
-            }, status=status.HTTP_404_NOT_FOUND)
+                "status": "success",
+                "message": "Documentos obtenidos correctamente.",
+                "documents": response_serializer.data
+            }, status=status.HTTP_200_OK)
 
-        response_serializer = DocumentSerializer(document)
+        if request.method == "POST":
+            # crear o subir documento
+            serializer = CreateDocumentSerializer(data=request.data)
 
-        return Response({
-            "status": "success",
-            "message": "Documento obtenido correctamente.",
-            "document": response_serializer.data
-        }, status=status.HTTP_200_OK)
+            if not serializer.is_valid():
+                return Response({
+                    "status": "error",
+                    "errors": serializer.errors
+                }, status=status.HTTP_400_BAD_REQUEST)
 
-    except Exception:
-        return Response({
-            "status": "error",
-            "message": "Ocurrio un error interno al obtener el documento."
-        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            data = serializer.validated_data.copy()
+            # aplanar listas de un solo elemento de multipart
+            for key in data:
+                if isinstance(data[key], list) and len(data[key]) == 1:
+                    data[key] = data[key][0]
 
+            document = DocumentService.create_document_by_identifier(
+                email=email,
+                rut=rut,
+                data=data
+            )
 
-@api_view(["POST"])
-@permission_classes([IsAuthenticated])
-def document_create(request):
-
-    serializer = CreateDocumentSerializer(data=request.data)
-
-    if not serializer.is_valid():
-        return Response({
-            "status": "error",
-            "message": "Datos invalidos.",
-            "errors": serializer.errors
-        }, status=status.HTTP_400_BAD_REQUEST)
-
-    try:
-        document = DocumentService.create_document(
-            request.user,
-            serializer.validated_data
-        )
-
-        response_serializer = DocumentSerializer(document)
-
-        return Response({
-            "status": "success",
-            "message": "Documento creado correctamente.",
-            "document": response_serializer.data
-        }, status=status.HTTP_201_CREATED)
+            return Response({
+                "status": "success",
+                "message": "Documento creado correctamente.",
+                "document_id": str(document.id)
+            }, status=status.HTTP_201_CREATED)
 
     except serializers.ValidationError as error:
         return Response({
             "status": "error",
-            "message": "No se pudo crear el documento.",
             "errors": error.detail
         }, status=status.HTTP_400_BAD_REQUEST)
 
     except Exception:
         return Response({
             "status": "error",
-            "message": "Ocurrio un error interno al crear el documento."
+            "message": "Error interno del servidor."
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
-@api_view(["PUT"])
-@permission_classes([IsAuthenticated])
-def document_update(request, document_id):
+@api_view(["GET", "PUT", "DELETE"])
+@permission_classes([AllowAny])
+def document_detail_view(request, document_id):
+    try:
+        email = request.query_params.get("email")
+        rut = request.query_params.get("rut")
 
-    serializer = UpdateDocumentSerializer(data=request.data)
+        if request.method == "GET":
+            # obtener detalle del documento
+            document = DocumentService.get_document_by_id_and_identifier(
+                document_id=document_id,
+                email=email,
+                rut=rut
+            )
 
-    if not serializer.is_valid():
+            response_serializer = DocumentSerializer(document)
+
+            return Response({
+                "status": "success",
+                "message": "Documento obtenido correctamente.",
+                "document": response_serializer.data
+            }, status=status.HTTP_200_OK)
+
+        if request.method == "PUT":
+            # actualizacion no implementada aun
+            return Response({
+                "status": "error",
+                "message": "Actualizacion de documento no implementada aun."
+            }, status=status.HTTP_501_NOT_IMPLEMENTED)
+
+        if request.method == "DELETE":
+            # eliminar documento con soft delete
+            DocumentService.delete_document_by_id_and_identifier(
+                document_id=document_id,
+                email=email,
+                rut=rut
+            )
+
+            return Response({
+                "status": "success",
+                "message": "Documento eliminado correctamente."
+            }, status=status.HTTP_200_OK)
+
+    except serializers.ValidationError as error:
         return Response({
             "status": "error",
-            "message": "Datos invalidos.",
-            "errors": serializer.errors
+            "errors": error.detail
         }, status=status.HTTP_400_BAD_REQUEST)
 
-    try:
-        document = DocumentService.get_document_by_id(document_id)
-
-        if not DocumentService.validate_document_exists(document):
-            return Response({
-                "status": "error",
-                "message": "Documento no encontrado."
-            }, status=status.HTTP_404_NOT_FOUND)
-
-        document = DocumentService.update_document(
-            document,
-            serializer.validated_data
-        )
-
-        response_serializer = DocumentSerializer(document)
-
-        return Response({
-            "status": "success",
-            "message": "Documento actualizado correctamente.",
-            "document": response_serializer.data
-        }, status=status.HTTP_200_OK)
-
     except Exception:
         return Response({
             "status": "error",
-            "message": "Ocurrio un error interno al actualizar el documento."
+            "message": "Error interno del servidor."
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
-@api_view(["DELETE"])
-@permission_classes([IsAuthenticated])
-def document_delete(request, document_id):
-
+@api_view(["GET"])
+@permission_classes([AllowAny])
+def document_categories_view(request):
     try:
-        document = DocumentService.get_document_by_id(document_id)
+        # listar categorias de documentos
+        categories = DocumentCategoryService.get_categories()
 
-        if not DocumentService.validate_document_exists(document):
-            return Response({
-                "status": "error",
-                "message": "Documento no encontrado."
-            }, status=status.HTTP_404_NOT_FOUND)
-
-        DocumentService.delete_document(document)
+        response_serializer = DocumentCategorySerializer(
+            categories, many=True
+        )
 
         return Response({
             "status": "success",
-            "message": "Documento eliminado correctamente."
+            "message": "Categorias obtenidas correctamente.",
+            "categories": response_serializer.data
         }, status=status.HTTP_200_OK)
 
     except Exception:
         return Response({
             "status": "error",
-            "message": "Ocurrio un error interno al eliminar el documento."
+            "message": "Error interno del servidor."
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

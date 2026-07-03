@@ -1,14 +1,18 @@
 from django.urls import path
-from . import views
 
+from .views import (
+    documents_view,
+    document_detail_view,
+    document_categories_view,
+)
 
 urlpatterns = [
-    path("", views.health, name="documents-health"),
+    # lista categorias para clasificar documentos
+    path("categories/", document_categories_view, name="document_categories"),
 
-    path("list/", views.document_list, name="document-list"),
-    path("create/", views.document_create, name="document-create"),
+    # lista documentos y permite crear/subir nuevos documentos
+    path("", documents_view, name="documents"),
 
-    path("<uuid:document_id>/", views.document_detail, name="document-detail"),
-    path("<uuid:document_id>/update/", views.document_update, name="document-update"),
-    path("<uuid:document_id>/delete/", views.document_delete, name="document-delete"),
+    # maneja detalle, actualizacion y eliminacion por documento
+    path("<uuid:document_id>/", document_detail_view, name="document_detail"),
 ]

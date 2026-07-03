@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .repositories import UserRepository
+from .repositories import UserRepository, MedicalProfileRepository
 
 
 class UserService:
@@ -57,16 +57,64 @@ class UserService:
 
     @staticmethod
     def get_medical_profile(user):
-        return UserRepository.get_or_create_medical_profile(user)
+        return MedicalProfileRepository.get_or_create_medical_profile(user)
 
     @staticmethod
     def update_medical_profile(user, data):
-        profile = UserRepository.get_or_create_medical_profile(user)
+        profile = MedicalProfileRepository.get_or_create_medical_profile(user)
 
-        for field, value in data.items():
-            setattr(profile, field, value)
+        # Delega la escritura al repositorio para no repetir set/save en la capa service.
+        return MedicalProfileRepository.update_fields(profile, data)
 
-        return UserRepository.save_medical_profile(profile)
+    @staticmethod
+    def update_profile_image_metadata(user, profile_image_bucket, profile_image_key, profile_image_url=""):
+        # Expone la actualizacion de foto para futuros endpoints de subida.
+        profile = MedicalProfileRepository.get_or_create_medical_profile(user)
+
+        return MedicalProfileRepository.update_profile_image_metadata(
+            profile=profile,
+            profile_image_bucket=profile_image_bucket,
+            profile_image_key=profile_image_key,
+            profile_image_url=profile_image_url,
+        )
+
+    @staticmethod
+    def clear_profile_image_metadata(user):
+        # Permite remover la foto sin borrar el perfil medico.
+        profile = MedicalProfileRepository.get_or_create_medical_profile(user)
+
+        return MedicalProfileRepository.clear_profile_image_metadata(profile)
+
+    @staticmethod
+    def get_profile_image_metadata(user):
+        # Devuelve bucket/key/url sin exponer logica de modelo a la vista.
+        profile = MedicalProfileRepository.get_or_create_medical_profile(user)
+
+        return MedicalProfileRepository.get_profile_image_metadata(profile)
+
+    @staticmethod
+    def set_current_medications(user, medications):
+        profile = MedicalProfileRepository.get_or_create_medical_profile(user)
+
+        return MedicalProfileRepository.set_current_medications(profile, medications)
+
+    @staticmethod
+    def set_recent_medical_history(user, history):
+        profile = MedicalProfileRepository.get_or_create_medical_profile(user)
+
+        return MedicalProfileRepository.set_recent_medical_history(profile, history)
+
+    @staticmethod
+    def set_allergies(user, allergies):
+        profile = MedicalProfileRepository.get_or_create_medical_profile(user)
+
+        return MedicalProfileRepository.set_allergies(profile, allergies)
+
+    @staticmethod
+    def set_chronic_conditions(user, chronic_conditions):
+        profile = MedicalProfileRepository.get_or_create_medical_profile(user)
+
+        return MedicalProfileRepository.set_chronic_conditions(profile, chronic_conditions)
 
 class AuthService:
     @staticmethod

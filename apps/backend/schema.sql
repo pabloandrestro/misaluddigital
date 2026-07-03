@@ -47,8 +47,8 @@ CREATE TYPE "public"."priority" AS ENUM (
 CREATE TABLE "public"."document_categories" (
     "id" uuid NOT NULL DEFAULT gen_random_uuid(),
     "name" varchar(100) NOT NULL,
-    "slug" varchar(100) NOT NULL,
-    "icon" varchar(50),
+    "slug" varchar(100) NOT NULL UNIQUE,
+    "icon" varchar(100) NOT NULL DEFAULT '',
 
     PRIMARY KEY ("id")
 );
@@ -81,8 +81,13 @@ CREATE TABLE "public"."documents" (
     "document_date" date,
     "issuing_institution" varchar,
     "issuing_professional" varchar,
-    "ai_metadata" jsonb,
+    "specialty" varchar(255),
+    "favorite" boolean NOT NULL DEFAULT FALSE,
+    "bucket_name" varchar(150) NOT NULL,
+    "extracted_text" text NOT NULL DEFAULT '',
+    "ai_metadata" jsonb NOT NULL DEFAULT '{}'::jsonb,
     "created_at" timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "deleted_at" timestamptz,
 
     PRIMARY KEY ("id")
@@ -115,17 +120,16 @@ CREATE TABLE "public"."audit_logs" (
 CREATE TABLE "public"."temporary_access_links" (
     "id" uuid NOT NULL DEFAULT gen_random_uuid(),
     "user_id" uuid NOT NULL,
-    "token" varchar NOT NULL,
-    "professional_name" varchar,
-    "professional_rut" varchar,
-    "document_ids" uuid[] NOT NULL DEFAULT '{}',
+    "token" varchar(255) NOT NULL UNIQUE,
+    "professional_name" varchar(150) NOT NULL,
+    "professional_rut" varchar(12) NOT NULL,
+    "document_ids" jsonb NOT NULL DEFAULT '[]'::jsonb,
     "expires_at" timestamptz NOT NULL,
     "accessed_at" timestamptz,
     "created_at" timestamptz NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     PRIMARY KEY ("id")
 );
-
 
 -- =========================================================
 -- indexes
@@ -198,3 +202,45 @@ ALTER TABLE "public"."temporary_access_links"
 ADD CONSTRAINT "fk_temporary_access_links_user_id_users_id"
 FOREIGN KEY ("user_id")
 REFERENCES "public"."users" ("id");
+
+-- =========================================================
+-- insert into para document_categories
+-- con esta informacion se tendran los slugs
+-- =========================================================
+
+INSERT INTO
+	document_categories (id, name, slug, icon)
+VALUES
+	(gen_random_uuid(), 'Recetas medicas', 'recetas-medicas', 'file-text'),
+	(gen_random_uuid(), 'Examenes', 'examenes', 'flask-conical'),
+	(gen_random_uuid(), 'Certificados', 'certificados', 'badge-check')
+ON CONFLICT (slug) DO NOTHING;
+
+
+-- =========================================================
+-- supabase storage buckets (crear desde dashboard o CLI)
+-- =========================================================
+--
+-- Bucket: profile-images
+--   Público: false (privado)
+--   Límite: 5242880 bytes (5 MB)
+--   MIME permitidos: image/jpeg, image/png, image/webp
+--   Políticas RLS: INSERT/UPDATE/SELECT solo si auth.uid() = user_id
+--
+-- Bucket: documents-recetas-medicas
+--   Público: false (privado)
+--   Límite: 10485760 bytes (10 MB)
+--   MIME permitidos: application/pdf, image/jpeg, image/png, image/webp
+--   Políticas RLS: SELECT/INSERT/UPDATE/DELETE solo si auth.uid() = user_id
+--
+-- Bucket: documents-examenes
+--   Público: false (privado)
+--   Límite: 10485760 bytes (10 MB)
+--   MIME permitidos: application/pdf, image/jpeg, image/png, image/webp
+--   Políticas RLS: SELECT/INSERT/UPDATE/DELETE solo si auth.uid() = user_id
+--
+-- Bucket: documents-certificados
+--   Público: false (privado)
+--   Límite: 10485760 bytes (10 MB)
+--   MIME permitidos: application/pdf, image/jpeg, image/png, image/webp
+--   Políticas RLS: SELECT/INSERT/UPDATE/DELETE solo si auth.uid() = user_id
