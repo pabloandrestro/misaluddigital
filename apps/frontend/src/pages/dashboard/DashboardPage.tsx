@@ -1,35 +1,68 @@
 import { useAuthStore } from "@/lib/store/auth.store";
-import { Share2, Upload, Lightbulb, ShieldCheck, Download, Share2 as ShareIcon, Eye, Trash2 } from "lucide-react";
-import { useState } from "react";
+import { Share2, Upload, Lightbulb, ShieldCheck, Download, Share2 as ShareIcon, Trash2, Eye, X } from "lucide-react";
+import { useState, useEffect } from "react";
 import robotImg from "@/assets/img/robot.png";
 import fondoSeguridadImg from "@/assets/img/fondo-seguridad.png";
 import iconoDocumentos from "@/assets/img/icono-documentos.png";
 import iconoExamenes from "@/assets/img/icono-examenes.png";
 import iconoLicencias from "@/assets/img/icono-licencias.png";
 import iconoRecetas from "@/assets/img/icono-recetas.png";
+import UploadDocumentModal from "@/components/layout/UploadDocumentModal";
+import { api } from "@/lib/api/client";
 
-const STATS = [
-  { label: "Exámenes",   value: 3, icono: iconoExamenes, color: "text-categoria-examenes",  border: "border-b-categoria-examenes"  },
-  { label: "Recetas",    value: 3, icono: iconoRecetas, color: "text-categoria-recetas",   border: "border-b-categoria-recetas"   },
-  { label: "Licencias",  value: 1, icono: iconoLicencias, color: "text-categoria-licencias", border: "border-b-categoria-licencias" },
-  { label: "Documentos", value: 7, icono: iconoDocumentos, color: "text-categoria-documentos",border: "border-b-categoria-documentos"},
-];
+interface Document {
+  id: string;
+  title: string;
+  doc_type: string;
+  document_date: string | null;
+  created_at: string;
+  issuing_institution: string | null;
+  issuing_professional: string | null;
+  file_url: string | null;
+  mime_type: string | null;
+}
 
 const CATEGORIAS = ["Todos", "Examen", "Receta", "Licencia"];
 
 export default function DashboardPage() {
   const user = useAuthStore((s) => s.user);
   const [activeTab, setActiveTab] = useState("Todos");
+  const [showUpload, setShowUpload] = useState(false);
+  const [documentos, setDocumentos] = useState<Document[]>([]);
+  const [loadingDocs, setLoadingDocs] = useState(true);
+  const [selectedDoc, setSelectedDoc] = useState<Document | null>(null);
 
-  const DOCUMENTOS = [
-    { id: 1, nombre: "Hemograma completo", tipo: "Exámen",   fecha: "12 Oct 2024", icono: "🧪", color: "bg-categoria-examenesBg text-categoria-examenes" },
-    { id: 2, nombre: "Gripe",              tipo: "Receta",   fecha: "12 Oct 2024", icono: "💊", color: "bg-categoria-recetasBg text-categoria-recetas" },
-    { id: 3, nombre: "3 días",             tipo: "Licencia", fecha: "12 Oct 2024", icono: "📋", color: "bg-categoria-licenciasBg text-categoria-licencias" },
-    { id: 4, nombre: "Hemograma completo", tipo: "Exámen",   fecha: "05 Oct 2024", icono: "🧪", color: "bg-categoria-examenesBg text-categoria-examenes" },
-    { id: 5, nombre: "Gripe",              tipo: "Receta",   fecha: "01 Oct 2024", icono: "💊", color: "bg-categoria-recetasBg text-categoria-recetas" },
-    { id: 6, nombre: "Hemograma completo", tipo: "Exámen",   fecha: "28 Sep 2024", icono: "🧪", color: "bg-categoria-examenesBg text-categoria-examenes" },
-    { id: 7, nombre: "Gripe",              tipo: "Receta",   fecha: "20 Sep 2024", icono: "💊", color: "bg-purple-100 text-purple-600" },
+  useEffect(() => {
+    const fetchDocuments = async () => {
+      try {
+        const res = await api.get(`/documents/?email=${user?.email}`);
+        setDocumentos(res.data.documents);
+      } catch (err) {
+        console.error("Error al cargar documentos:", err);
+      } finally {
+        setLoadingDocs(false);
+      }
+    };
+    if (user?.email) fetchDocuments();
+  }, [user?.email]);
+
+  const STATS = [
+    { label: "Exámenes",   value: documentos.filter(d => d.doc_type === "EXAMENES").length,  icono: iconoExamenes,  border: "border-b-categoria-examenes"  },
+    { label: "Recetas",    value: documentos.filter(d => d.doc_type === "RECETA").length,    icono: iconoRecetas,   border: "border-b-categoria-recetas"   },
+    { label: "Licencias",  value: documentos.filter(d => d.doc_type === "LICENCIA").length,  icono: iconoLicencias, border: "border-b-categoria-licencias" },
+    { label: "Documentos", value: documentos.length,                                         icono: iconoDocumentos,border: "border-b-categoria-documentos"},
   ];
+
+  const handleDelete = async (id: string) => {
+    if (!confirm("¿Estás segura de que deseas eliminar este documento?")) return;
+    try {
+      await api.delete(`/documents/${id}/?email=${user?.email}`);
+      setDocumentos((prev) => prev.filter((d) => d.id !== id));
+    } catch (err) {
+      console.error("Error al eliminar documento:", err);
+      alert("No se pudo eliminar el documento.");
+    }
+  };
 
   return (
     <div className="p-4 md:p-6">
@@ -50,14 +83,16 @@ export default function DashboardPage() {
             <Share2 size={15} />
             Compartir historial
           </button>
-          <button className="flex items-center justify-center gap-2 px-4 py-2 rounded-full bg-primary-mid text-white text-sm hover:bg-primary-dark transition-colors">
+          <button
+            onClick={() => setShowUpload(true)}
+            className="flex items-center justify-center gap-2 px-4 py-2 rounded-full bg-primary-mid text-white text-sm hover:bg-primary-dark transition-colors">
             <Upload size={15} />
             Subir documento
           </button>
         </div>
       </div>
 
-      {/* Layout responsivo: columna en móvil, dos columnas en desktop */}
+      {/* Layout responsivo */}
       <div className="flex flex-col lg:flex-row gap-6 items-start">
 
         {/* COLUMNA IZQUIERDA */}
@@ -66,12 +101,12 @@ export default function DashboardPage() {
           {/* Tarjetas de resumen */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
             {STATS.map(({ label, value, icono, border }) => (
-            <div key={label} className={`bg-white rounded-xl shadow-md p-4 flex flex-col items-center gap-2 border border-gray-100 border-b-4 ${border}`}>
-              <img src={icono} alt={label} className="w-10 h-10 md:w-12 md:h-12 object-contain" />
-              <p className="text-xl md:text-2xl font-semibold text-gray-900">{value}</p>
-              <p className="text-xs md:text-sm text-gray-400 text-center">{label}</p>
-            </div>
-          ))}
+              <div key={label} className={`bg-white rounded-xl shadow-md p-4 flex flex-col items-center gap-2 border border-gray-100 border-b-4 ${border}`}>
+                <img src={icono} alt={label} className="w-10 h-10 md:w-12 md:h-12 object-contain" />
+                <p className="text-xl md:text-2xl font-semibold text-gray-900">{value}</p>
+                <p className="text-xs md:text-sm text-gray-400 text-center">{label}</p>
+              </div>
+            ))}
           </div>
 
           {/* Tabla de documentos */}
@@ -96,24 +131,42 @@ export default function DashboardPage() {
 
             {/* Filas */}
             <div className="divide-y divide-gray-50">
-              {DOCUMENTOS.filter((doc) => activeTab === "Todos" || doc.tipo === activeTab).map((doc) => (
-                <div key={doc.id} className="flex items-center gap-2 md:gap-4 py-3">
-                  <div className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center text-sm flex-shrink-0">
-                    {doc.icono}
-                  </div>
-                  <p className="flex-1 min-w-0 text-sm text-gray-700 font-medium truncate">{doc.nombre}</p>
-                  <span className={`hidden sm:inline px-3 py-0.5 rounded-full text-xs font-medium flex-shrink-0 ${doc.color}`}>
-                    {doc.tipo}
-                  </span>
-                  <p className="hidden md:block text-xs text-gray-400 w-24 text-right flex-shrink-0">{doc.fecha}</p>
-                  <div className="flex gap-2 md:gap-3 text-gray-400 flex-shrink-0">
-                    <button className="hover:text-primary-mid transition-colors"><Download size={15} /></button>
-                    <button className="hidden sm:block hover:text-primary-mid transition-colors"><ShareIcon size={15} /></button>
-                    <button className="hidden sm:block hover:text-primary-mid transition-colors"><Eye size={15} /></button>
-                    <button className="hover:text-red-400 transition-colors"><Trash2 size={15} /></button>
-                  </div>
-                </div>
-              ))}
+              {loadingDocs ? (
+                <p className="text-sm text-gray-400 text-center py-4">Cargando documentos...</p>
+              ) : documentos.length === 0 ? (
+                <p className="text-sm text-gray-400 text-center py-4">No hay documentos registrados.</p>
+              ) : (
+                documentos
+                  .filter((doc) => activeTab === "Todos" || doc.doc_type === activeTab)
+                  .map((doc) => (
+                    <div key={doc.id} className="flex items-center gap-2 md:gap-4 py-3">
+                      <div className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center text-sm flex-shrink-0">
+                        📄
+                      </div>
+                      <p className="flex-1 min-w-0 text-sm text-gray-700 font-medium truncate">{doc.title}</p>
+                      <span className="hidden sm:inline px-3 py-0.5 rounded-full text-xs font-medium flex-shrink-0 bg-gray-100 text-gray-600">
+                        {doc.doc_type}
+                      </span>
+                      <p className="hidden md:block text-xs text-gray-400 w-24 text-right flex-shrink-0">
+                        {doc.document_date ? new Date(doc.document_date + "T00:00:00").toLocaleDateString("es-CL") : "—"}
+                      </p>
+                      <div className="flex gap-2 md:gap-3 text-gray-400 flex-shrink-0">
+                        <button className="hover:text-primary-mid transition-colors"><Download size={15} /></button>
+                        <button className="hover:text-primary-mid transition-colors"><ShareIcon size={15} /></button>
+                        <button
+                          onClick={() => setSelectedDoc(doc)}
+                          className="hover:text-primary-mid transition-colors">
+                          <Eye size={15} />
+                        </button>
+                        <button
+                          onClick={() => handleDelete(doc.id)}
+                          className="hover:text-red-400 transition-colors">
+                          <Trash2 size={15} />
+                        </button>
+                      </div>
+                    </div>
+                  ))
+              )}
             </div>
 
             {/* Ver historial completo */}
@@ -122,7 +175,6 @@ export default function DashboardPage() {
                 Ver historial completo
               </button>
             </div>
-
           </div>
         </div>
 
@@ -163,6 +215,68 @@ export default function DashboardPage() {
         </div>
 
       </div>
+
+      {/* Modal subir documento */}
+      {showUpload && (
+        <UploadDocumentModal
+          onClose={() => setShowUpload(false)}
+          onSuccess={() => setShowUpload(false)}
+        />
+      )}
+
+      {/* Modal ver documento */}
+      {selectedDoc && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
+          <div className="w-full max-w-md bg-white rounded-xl shadow-xl p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold text-gray-900">{selectedDoc.title}</h2>
+              <button onClick={() => setSelectedDoc(null)} className="text-gray-400 hover:text-gray-600">
+                <X size={20} />
+              </button>
+            </div>
+            <dl className="grid grid-cols-2 gap-3 text-sm">
+              <div>
+                <dt className="text-xs text-gray-400">Tipo</dt>
+                <dd className="font-medium text-gray-900">{selectedDoc.doc_type}</dd>
+              </div>
+              <div>
+                <dt className="text-xs text-gray-400">Fecha</dt>
+                <dd className="font-medium text-gray-900">
+                  {selectedDoc.document_date
+                    ? new Date(selectedDoc.document_date + "T00:00:00").toLocaleDateString("es-CL")
+                    : "—"}
+                </dd>
+              </div>
+              <div>
+                <dt className="text-xs text-gray-400">Centro médico</dt>
+                <dd className="font-medium text-gray-900">{selectedDoc.issuing_institution || "—"}</dd>
+              </div>
+              <div>
+                <dt className="text-xs text-gray-400">Médico</dt>
+                <dd className="font-medium text-gray-900">{selectedDoc.issuing_professional || "—"}</dd>
+              </div>
+              <div>
+                <dt className="text-xs text-gray-400">Tipo de archivo</dt>
+                <dd className="font-medium text-gray-900">{selectedDoc.mime_type || "—"}</dd>
+              </div>
+            </dl>
+            <div className="flex gap-3 mt-5">
+              <button
+                onClick={() => setSelectedDoc(null)}
+                className="flex-1 py-2 rounded-lg border border-gray-200 text-sm text-gray-600 hover:bg-gray-50 transition-colors">
+                Cerrar
+              </button>
+              {selectedDoc.file_url && (
+                <a href={selectedDoc.file_url} target="_blank" rel="noreferrer"
+                  className="flex-1 py-2 rounded-lg bg-primary-mid text-white text-sm font-medium text-center hover:bg-primary-dark transition-colors">
+                  Ver archivo
+                </a>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }

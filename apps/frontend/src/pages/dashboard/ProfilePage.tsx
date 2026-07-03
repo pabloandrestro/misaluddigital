@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useAuthStore } from "@/lib/store/auth.store";
 import { api } from "@/lib/api/client";
 import { Pencil, Calendar, User, Droplet, Weight, Ruler, Phone, Activity, Mail, MapPin, Heart, Clock } from "lucide-react";
+import EditProfileModal from "@/components/layout/EditProfileModal";
 
 interface MedicalProfile {
   first_name: string;
@@ -10,8 +11,8 @@ interface MedicalProfile {
   genre: string;
   blood_type: string;
   weight: number;
-  height: number;
-  profile_image: string;
+  height: number;  
+  profile_image?: string;
   allergies: string;
   chronic_conditions: string;
   emergency_contact_name: string;
@@ -31,6 +32,7 @@ export default function ProfilePage() {
   const user = useAuthStore((s) => s.user);
   const [profile, setProfile] = useState<MedicalProfile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [showEdit, setShowEdit] = useState(false);
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -47,6 +49,7 @@ export default function ProfilePage() {
   }, [user?.email]);
 
   if (loading) return <div className="p-4 text-gray-400 text-sm">Cargando perfil...</div>;
+  
 
   return (
     <div className="p-4 md:p-6">
@@ -57,7 +60,9 @@ export default function ProfilePage() {
           <h1 className="text-xl md:text-2xl font-semibold text-gray-900">Mi perfil</h1>
           <p className="text-sm text-gray-400 mt-1">Gestiona tu información personal y de salud.</p>
         </div>
-        <button className="flex items-center gap-2 px-3 md:px-4 py-2 rounded-lg border border-primary-mid text-primary-mid text-sm hover:bg-primary-light transition-colors flex-shrink-0">
+        <button
+          onClick={() => setShowEdit(true)}
+          className="flex items-center gap-2 px-3 md:px-4 py-2 rounded-lg border border-primary-mid text-primary-mid text-sm hover:bg-primary-light transition-colors flex-shrink-0">
           <Pencil size={14} strokeWidth={2.5}/>
           <span className="hidden sm:inline">Editar perfil</span>
         </button>
@@ -249,7 +254,16 @@ export default function ProfilePage() {
         </div>
         <p className="text-sm text-gray-400 text-center py-4">Sin historial registrado</p>
       </div>
-
+          {showEdit && profile && (
+        <EditProfileModal
+          profile={profile}
+          onClose={() => setShowEdit(false)}
+          onSuccess={(updated) => {
+            setProfile(updated);
+            setShowEdit(false);
+          }}
+        />
+      )}
     </div>
   );
 }
