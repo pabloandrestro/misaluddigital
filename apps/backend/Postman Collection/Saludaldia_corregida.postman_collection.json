@@ -362,7 +362,46 @@
       "response": []
     },
     {
-      "name": "07 - Get medical profile",
+      "name": "07 - Get current user without identifier (negative)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status 400', function () {",
+              "    pm.response.to.have.status(400);",
+              "})",
+              "",
+              "pm.test('Status is error', function () {",
+              "    var json = pm.response.json();",
+              "    pm.expect(json.status).to.eql('error');",
+              "})"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/api/auth/me/",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "auth",
+            "me",
+            ""
+          ]
+        },
+        "description": "Caso negativo: sin email ni rut, debe devolver 400.\n\nGenerated from cURL: curl --request GET --url '{{base_url}}/api/auth/me/'"
+      },
+      "response": []
+    },
+    {
+      "name": "08 - Get medical profile",
       "event": [
         {
           "listen": "test",
@@ -412,7 +451,46 @@
       "response": []
     },
     {
-      "name": "08 - Update medical profile",
+      "name": "09 - Get medical profile without identifier (negative)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status 400', function () {",
+              "    pm.response.to.have.status(400);",
+              "})",
+              "",
+              "pm.test('Status is error', function () {",
+              "    var json = pm.response.json();",
+              "    pm.expect(json.status).to.eql('error');",
+              "})"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/api/auth/profile/",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "auth",
+            "profile",
+            ""
+          ]
+        },
+        "description": "Caso negativo: sin email ni rut, debe devolver 400.\n\nGenerated from cURL: curl --request GET --url '{{base_url}}/api/auth/profile/'"
+      },
+      "response": []
+    },
+    {
+      "name": "10 - Update medical profile",
       "event": [
         {
           "listen": "test",
@@ -427,6 +505,11 @@
               "    pm.expect(json.status).to.eql('success');",
               "})",
               "",
+              "pm.test('Profile exists in response', function () {",
+              "    var json = pm.response.json();",
+              "    pm.expect(json).to.have.property('profile');",
+              "})",
+              "",
               "pm.test('Profile first_name is Usuario', function () {",
               "    var json = pm.response.json();",
               "    pm.expect(json.profile.first_name).to.eql('Usuario');",
@@ -435,6 +518,11 @@
               "pm.test('Profile last_name is Prueba', function () {",
               "    var json = pm.response.json();",
               "    pm.expect(json.profile.last_name).to.eql('Prueba');",
+              "})",
+              "",
+              "pm.test('Profile does not contain legacy profile_image field', function () {",
+              "    var json = pm.response.json();",
+              "    pm.expect(json.profile).to.not.have.property('profile_image');",
               "})"
             ],
             "type": "text/javascript",
@@ -444,7 +532,7 @@
         }
       ],
       "request": {
-        "method": "PUT",
+        "method": "PATCH",
         "header": [
           {
             "key": "Content-Type",
@@ -453,7 +541,7 @@
         ],
         "body": {
           "mode": "raw",
-          "raw": "{\r\n  \"email\": \"{{test_email}}\",\r\n  \"first_name\": \"Usuario\",\r\n  \"last_name\": \"Prueba\",\r\n  \"birthdate\": \"2000-01-01\",\r\n  \"genre\": \"Masculino\",\r\n  \"blood_type\": \"O+\",\r\n  \"weight\": 80,\r\n  \"height\": 175,\r\n  \"profile_image\": \"\",\r\n  \"allergies\": \"Ninguna\",\r\n  \"chronic_conditions\": \"Ninguna\",\r\n  \"emergency_contact_name\": \"Contacto Prueba\",\r\n  \"emergency_contact_phone\": \"+56912345678\"\r\n}",
+          "raw": "{\n  \"first_name\": \"Usuario\",\n  \"last_name\": \"Prueba\",\n  \"birthdate\": \"2000-01-01\",\n  \"genre\": \"Masculino\",\n  \"blood_type\": \"O+\",\n  \"weight\": 80,\n  \"height\": 175,\n  \"phone_number\": \"+56912345678\",\n  \"emergency_contact_name\": \"Contacto Prueba\",\n  \"emergency_contact_phone\": \"+56912345678\",\n  \"emergency_contact_email\": \"\",\n  \"emergency_contact_relationship\": \"Esposa\",\n  \"address\": \"Ejemplo de Address 999\",\n  \"relevant_clinical_information\": \"\",\n  \"relevance_type\": [],\n  \"current_medications\": [],\n  \"recent_medical_history\": [],\n  \"allergies\": [],\n  \"chronic_conditions\": []\n}",
           "options": {
             "raw": {
               "language": "json"
@@ -478,7 +566,315 @@
             }
           ]
         },
-        "description": "Generated from cURL: curl --request PUT --url '{{base_url}}/api/auth/profile/' --header 'Content-Type: application/json' --data '{\"email\":\"{{test_email}}\",\"first_name\":\"Usuario\",\"last_name\":\"Prueba\",\"birthdate\":\"2000-01-01\",\"genre\":\"Masculino\",\"blood_type\":\"O+\",\"weight\":80,\"height\":175,\"profile_image\":\"\",\"allergies\":\"Ninguna\",\"chronic_conditions\":\"Ninguna\",\"emergency_contact_name\":\"Contacto Prueba\",\"emergency_contact_phone\":\"+56912345678\"}'"
+        "description": "Actualiza el perfil medico (PATCH, partial=True segun views.py). No enviar profile_image (eliminado), ni imc/updated_at (read-only). Los campos de listas van como arrays JSON.\n\nGenerated from cURL: curl --request PATCH --url '{{base_url}}/api/auth/profile/?email={{test_email}}' --header 'Content-Type: application/json' --data '{\n  \"first_name\": \"Usuario\",\n  \"last_name\": \"Prueba\",\n  \"birthdate\": \"2000-01-01\",\n  \"genre\": \"Masculino\",\n  \"blood_type\": \"O+\",\n  \"weight\": 80,\n  \"height\": 175,\n  \"phone_number\": \"+56912345678\",\n  \"emergency_contact_name\": \"Contacto Prueba\",\n  \"emergency_contact_phone\": \"+56912345678\",\n  \"emergency_contact_email\": \"\",\n  \"emergency_contact_relationship\": \"Esposa\",\n  \"address\": \"Ejemplo de Address 999\",\n  \"relevant_clinical_information\": \"\",\n  \"relevance_type\": [],\n  \"current_medications\": [],\n  \"recent_medical_history\": [],\n  \"allergies\": [],\n  \"chronic_conditions\": []\n}'"
+      },
+      "response": []
+    },
+    {
+      "name": "11 - Update medical profile with invalid phone (negative)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status 400', function () {",
+              "    pm.response.to.have.status(400);",
+              "})",
+              "",
+              "pm.test('Status is error', function () {",
+              "    var json = pm.response.json();",
+              "    pm.expect(json.status).to.eql('error');",
+              "})"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"phone_number\": \"no-es-un-telefono\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{base_url}}/api/auth/profile/?email={{test_email}}",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "auth",
+            "profile",
+            ""
+          ],
+          "query": [
+            {
+              "key": "email",
+              "value": "{{test_email}}"
+            }
+          ]
+        },
+        "description": "Caso negativo: telefono con formato invalido, debe devolver 400. NOTA: el formato exacto de validacion no pudo confirmarse porque serializers.py no fue proporcionado; se asume un valor claramente no numerico como invalido. Verificar contra el validador real del campo phone_number.\n\nGenerated from cURL: curl --request PATCH --url '{{base_url}}/api/auth/profile/?email={{test_email}}' --header 'Content-Type: application/json' --data '{\"phone_number\": \"no-es-un-telefono\"}'"
+      },
+      "response": []
+    },
+    {
+      "name": "12 - Get profile image metadata",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status 200', function () {",
+              "    pm.response.to.have.status(200);",
+              "})",
+              "",
+              "pm.test('Status is success', function () {",
+              "    var json = pm.response.json();",
+              "    pm.expect(json.status).to.eql('success');",
+              "})",
+              "",
+              "pm.test('Image exists in response', function () {",
+              "    var json = pm.response.json();",
+              "    pm.expect(json).to.have.property('image');",
+              "})"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/api/auth/profile/image/?email={{test_email}}",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "auth",
+            "profile",
+            "image",
+            ""
+          ],
+          "query": [
+            {
+              "key": "email",
+              "value": "{{test_email}}"
+            }
+          ]
+        },
+        "description": "Obtiene la metadata actual de la imagen de perfil del usuario.\n\nGenerated from cURL: curl --request GET --url '{{base_url}}/api/auth/profile/image/?email={{test_email}}'"
+      },
+      "response": []
+    },
+    {
+      "name": "13 - Upload profile image",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status 200', function () {",
+              "    pm.response.to.have.status(200);",
+              "})",
+              "",
+              "pm.test('Status is success', function () {",
+              "    var json = pm.response.json();",
+              "    pm.expect(json.status).to.eql('success');",
+              "})",
+              "",
+              "pm.test('Image exists in response', function () {",
+              "    var json = pm.response.json();",
+              "    pm.expect(json).to.have.property('image');",
+              "})",
+              "",
+              "pm.test('Image profile_image_url exists', function () {",
+              "    var json = pm.response.json();",
+              "    pm.expect(json.image).to.have.property('profile_image_url');",
+              "    pm.expect(json.image.profile_image_url).to.not.be.empty;",
+              "})",
+              "",
+              "pm.test('Image profile_image_bucket is profile-images', function () {",
+              "    var json = pm.response.json();",
+              "    pm.expect(json.image.profile_image_bucket).to.eql('profile-images');",
+              "})"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "formdata",
+          "formdata": [
+            {
+              "key": "image",
+              "type": "file",
+              "src": []
+            }
+          ]
+        },
+        "url": {
+          "raw": "{{base_url}}/api/auth/profile/image/?email={{test_email}}",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "auth",
+            "profile",
+            "image",
+            ""
+          ],
+          "query": [
+            {
+              "key": "email",
+              "value": "{{test_email}}"
+            }
+          ]
+        },
+        "description": "Sube una imagen de perfil, valida el archivo, lo guarda en Supabase Storage y actualiza la metadata del perfil medico.\n\nGenerated from cURL: curl --request POST --url '{{base_url}}/api/auth/profile/image/?email={{test_email}}' --form 'image=@/path/to/file.jpg'"
+      },
+      "response": []
+    },
+    {
+      "name": "14 - Delete profile image",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status 200', function () {",
+              "    pm.response.to.have.status(200);",
+              "})",
+              "",
+              "pm.test('Status is success', function () {",
+              "    var json = pm.response.json();",
+              "    pm.expect(json.status).to.eql('success');",
+              "})"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "DELETE",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/api/auth/profile/image/?email={{test_email}}",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "auth",
+            "profile",
+            "image",
+            ""
+          ],
+          "query": [
+            {
+              "key": "email",
+              "value": "{{test_email}}"
+            }
+          ]
+        },
+        "description": "Elimina la imagen de perfil del Storage si existe y limpia la metadata del perfil medico.\n\nGenerated from cURL: curl --request DELETE --url '{{base_url}}/api/auth/profile/image/?email={{test_email}}'"
+      },
+      "response": []
+    },
+    {
+      "name": "15 - Upload profile image without file (negative)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status 400', function () {",
+              "    pm.response.to.have.status(400);",
+              "})"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "formdata",
+          "formdata": []
+        },
+        "url": {
+          "raw": "{{base_url}}/api/auth/profile/image/?email={{test_email}}",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "auth",
+            "profile",
+            "image",
+            ""
+          ],
+          "query": [
+            {
+              "key": "email",
+              "value": "{{test_email}}"
+            }
+          ]
+        },
+        "description": "Caso negativo: sube sin archivo image, debe devolver 400.\n\nGenerated from cURL: curl --request POST --url '{{base_url}}/api/auth/profile/image/?email={{test_email}}'"
+      },
+      "response": []
+    },
+    {
+      "name": "16 - Get profile image without identifier (negative)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Status 400', function () {",
+              "    pm.response.to.have.status(400);",
+              "})"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/api/auth/profile/image/",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "auth",
+            "profile",
+            "image",
+            ""
+          ]
+        },
+        "description": "Caso negativo: sin email ni rut como identificador, debe devolver 400.\n\nGenerated from cURL: curl --request GET --url '{{base_url}}/api/auth/profile/image/'"
       },
       "response": []
     }

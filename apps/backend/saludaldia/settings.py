@@ -171,7 +171,11 @@ CORS_ALLOW_CREDENTIALS = True
 
 SUPABASE_URL = os.getenv("SUPABASE_URL", "")
 SUPABASE_SERVICE_KEY = os.getenv("SUPABASE_SERVICE_KEY", "")
+
+# buckets
 SUPABASE_BUCKET = os.getenv("SUPABASE_BUCKET", "medical-documents")
+
+SUPABASE_PROFILE_IMAGE_BUCKET = os.getenv("SUPABASE_PROFILE_IMAGE_BUCKET", "profile-images")
 
 
 # --------------------------------------------------
