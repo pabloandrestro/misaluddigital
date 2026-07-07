@@ -4,6 +4,23 @@ import { api } from "@/lib/api/client";
 import { Pencil, Calendar, User, Droplet, Weight, Ruler, Phone, Activity, Mail, MapPin, Heart, Clock } from "lucide-react";
 import EditProfileModal from "@/components/layout/EditProfileModal";
 
+interface Medication {
+  id?: string;
+  name: string;
+  dose?: string;
+  frequency?: string;
+  start_date?: string | null;
+  end_date?: string | null;
+  notes?: string;
+  active?: boolean;
+}
+
+interface MedicalHistoryEntry {
+  title: string;
+  type?: string;
+  description?: string;
+}
+
 interface MedicalProfile {
   first_name: string;
   last_name: string;
@@ -11,12 +28,18 @@ interface MedicalProfile {
   genre: string;
   blood_type: string;
   weight: number;
-  height: number;  
-  profile_image?: string;
-  allergies: string;
-  chronic_conditions: string;
+  height: number;
+  profile_image_url?: string;
+  allergies: string[];
+  chronic_conditions: string[];
+  phone_number: string;
+  address: string;
   emergency_contact_name: string;
   emergency_contact_phone: string;
+  emergency_contact_email: string;
+  emergency_contact_relationship: string;
+  current_medications: Medication[];
+  recent_medical_history: MedicalHistoryEntry[];
 }
 
 function calcularEdad(birthdate: string): number {
@@ -38,7 +61,7 @@ export default function ProfilePage() {
     const fetchProfile = async () => {
       try {
         const res = await api.get(`/auth/profile/?email=${user?.email}`);
-        setProfile(res.data.user);
+        setProfile(res.data.profile);
       } catch (err) {
         console.error("Error al cargar perfil:", err);
       } finally {
@@ -49,7 +72,8 @@ export default function ProfilePage() {
   }, [user?.email]);
 
   if (loading) return <div className="p-4 text-gray-400 text-sm">Cargando perfil...</div>;
-  
+
+  const activeMedications = profile?.current_medications?.filter((m) => m.active !== false) ?? [];
 
   return (
     <div className="p-4 md:p-6">
@@ -74,8 +98,12 @@ export default function ProfilePage() {
 
           {/* Avatar + nombre + contacto */}
           <div className="flex items-start gap-4 flex-1 md:border-r md:border-gray-300 md:pr-6">
-            <div className="w-16 h-16 md:w-20 md:h-20 rounded-full bg-primary-mid flex items-center justify-center text-white text-xl md:text-2xl font-semibold flex-shrink-0">
-              {profile?.first_name?.[0]}{profile?.last_name?.[0]}
+            <div className="w-16 h-16 md:w-20 md:h-20 rounded-full bg-primary-mid flex items-center justify-center text-white text-xl md:text-2xl font-semibold flex-shrink-0 overflow-hidden">
+              {profile?.profile_image_url ? (
+                <img src={profile.profile_image_url} alt="Foto de perfil" className="w-full h-full object-cover" />
+              ) : (
+                <>{profile?.first_name?.[0]}{profile?.last_name?.[0]}</>
+              )}
             </div>
             <div className="flex-1 min-w-0">
               <h2 className="text-lg md:text-xl font-semibold text-gray-900 mb-2 truncate">
@@ -92,13 +120,17 @@ export default function ProfilePage() {
                   <div className="w-7 h-7 rounded-full bg-green-50 flex items-center justify-center flex-shrink-0">
                     <Phone size={14} strokeWidth={2.5} className="text-green-600" />
                   </div>
-                  <span className="text-gray-400">No registrado</span>
+                  <span className={profile?.phone_number ? "" : "text-gray-400"}>
+                    {profile?.phone_number || "No registrado"}
+                  </span>
                 </div>
                 <div className="flex items-center gap-2 text-sm text-gray-500">
                   <div className="w-7 h-7 rounded-full bg-blue-50 flex items-center justify-center flex-shrink-0">
                     <MapPin size={14} strokeWidth={2.5} className="text-blue-600" />
                   </div>
-                  <span className="text-gray-400">No registrada</span>
+                  <span className={profile?.address ? "" : "text-gray-400"}>
+                    {profile?.address || "No registrada"}
+                  </span>
                 </div>
               </div>
             </div>
@@ -113,18 +145,18 @@ export default function ProfilePage() {
               <p className="text-sm font-medium text-gray-700">Información clínica relevante</p>
             </div>
             <div className="flex flex-wrap gap-2 mb-3">
-              {profile?.chronic_conditions && profile.chronic_conditions !== "Ninguna"
-                ? profile.chronic_conditions.split(",").map((c, i) => (
+              {profile?.chronic_conditions && profile.chronic_conditions.length > 0
+                ? profile.chronic_conditions.map((c, i) => (
                     <span key={i} className="px-3 py-1 bg-red-100 text-red-600 text-xs rounded-full font-medium">
-                      {c.trim()}
+                      {c}
                     </span>
                   ))
                 : <p className="text-sm text-gray-400">Sin condiciones registradas</p>
               }
-              {profile?.allergies && profile.allergies !== "Ninguna" &&
-                profile.allergies.split(",").map((a, i) => (
+              {profile?.allergies && profile.allergies.length > 0 &&
+                profile.allergies.map((a, i) => (
                   <span key={i} className="px-3 py-1 bg-orange-100 text-orange-600 text-xs rounded-full font-medium">
-                    {a.trim()}
+                    {a}
                   </span>
                 ))
               }
@@ -203,7 +235,12 @@ export default function ProfilePage() {
                 <div className="w-7 h-7 rounded-full bg-primary-light flex items-center justify-center text-primary-mid text-xs font-semibold flex-shrink-0">
                   {profile.emergency_contact_name[0]}
                 </div>
-                <p className="text-sm font-medium text-gray-900 truncate">{profile.emergency_contact_name}</p>
+                <div className="min-w-0">
+                  <p className="text-sm font-medium text-gray-900 truncate">{profile.emergency_contact_name}</p>
+                  {profile.emergency_contact_relationship && (
+                    <p className="text-xs text-gray-400 truncate">{profile.emergency_contact_relationship}</p>
+                  )}
+                </div>
               </div>
               <div className="flex items-center gap-2 text-sm text-gray-500">
                 <div className="w-7 h-7 rounded-full bg-green-50 flex items-center justify-center flex-shrink-0">
@@ -215,7 +252,9 @@ export default function ProfilePage() {
                 <div className="w-7 h-7 rounded-full bg-blue-50 flex items-center justify-center flex-shrink-0">
                   <Mail size={13} strokeWidth={2.5} className="text-blue-600" />
                 </div>
-                <span className="text-gray-400">No registrado</span>
+                <span className={profile.emergency_contact_email ? "truncate" : "text-gray-400"}>
+                  {profile.emergency_contact_email || "No registrado"}
+                </span>
               </div>
             </div>
           ) : (
@@ -231,8 +270,37 @@ export default function ProfilePage() {
             </div>
             <p className="text-sm font-medium text-gray-700">Medicamentos actuales</p>
           </div>
-          <p className="text-sm text-gray-400">Sin medicamentos registrados</p>
-          <button className="flex items-center gap-1 text-xs text-primary-mid hover:underline mt-3">
+          {activeMedications.length > 0 ? (
+            <div className="space-y-2">
+              {activeMedications.map((med, i) => {
+                const formatFecha = (f?: string | null) =>
+                  f ? new Date(f + "T00:00:00").toLocaleDateString("es-CL") : null;
+                const inicio = formatFecha(med.start_date);
+                const fin = formatFecha(med.end_date);
+                let rangoFechas = "";
+                if (inicio && fin) rangoFechas = `Desde ${inicio} hasta ${fin}`;
+                else if (inicio) rangoFechas = `Desde ${inicio}`;
+                else if (fin) rangoFechas = `Hasta ${fin}`;
+
+                return (
+                  <div key={i} className="text-sm">
+                    <p className="font-medium text-gray-900">{med.name}</p>
+                    <p className="text-xs text-gray-400">
+                      {[med.dose, med.frequency].filter(Boolean).join(" · ") || "Sin detalle"}
+                    </p>
+                    {rangoFechas && (
+                      <p className="text-xs text-gray-400">{rangoFechas}</p>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <p className="text-sm text-gray-400">Sin medicamentos registrados</p>
+          )}
+          <button
+            onClick={() => setShowEdit(true)}
+            className="flex items-center gap-1 text-xs text-primary-mid hover:underline mt-3">
             + Agregar medicamento
           </button>
         </div>
@@ -252,7 +320,27 @@ export default function ProfilePage() {
             Ver todo →
           </button>
         </div>
-        <p className="text-sm text-gray-400 text-center py-4">Sin historial registrado</p>
+        {profile?.recent_medical_history && profile.recent_medical_history.length > 0 ? (
+          <div className="space-y-3">
+            {profile.recent_medical_history.map((entry, i) => (
+              <div key={i} className="border-b border-gray-100 last:border-0 pb-3 last:pb-0">
+                <div className="flex items-center gap-2">
+                  <p className="text-sm font-medium text-gray-900">{entry.title}</p>
+                  {entry.type && (
+                    <span className="px-2 py-0.5 bg-primary-light text-primary-mid text-xs rounded-full">
+                      {entry.type}
+                    </span>
+                  )}
+                </div>
+                {entry.description && (
+                  <p className="text-xs text-gray-400 mt-1">{entry.description}</p>
+                )}
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="text-sm text-gray-400 text-center py-4">Sin historial registrado</p>
+        )}
       </div>
           {showEdit && profile && (
         <EditProfileModal
