@@ -122,13 +122,13 @@ class Document(models.Model):
     )
 
     extracted_text = models.TextField(
-        null=True,
+        default="",
         blank=True
     )
 
     # metadatos generados por analisis de ia
     ai_metadata = models.JSONField(
-        null=True,
+        default=dict,
         blank=True
     )
 

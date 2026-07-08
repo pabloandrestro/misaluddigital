@@ -70,7 +70,7 @@ def documents_view(request):
     except serializers.ValidationError as error:
         return Response({
             "status": "error",
-            "errors": error.detail
+            "error": error.detail
         }, status=status.HTTP_400_BAD_REQUEST)
 
     except Exception:

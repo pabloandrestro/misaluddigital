@@ -1,6 +1,7 @@
 from rest_framework import serializers
 
 from .models import Document, DocumentCategory
+from .validators import DocumentValidator
 
 
 class DocumentCategorySerializer(serializers.ModelSerializer):
@@ -73,28 +74,11 @@ class CreateDocumentSerializer(serializers.Serializer):
     favorite = serializers.BooleanField(default=False)
     file = serializers.FileField()
 
-    ALLOWED_MIME_TYPES = [
-        "application/pdf",
-        "image/jpeg",
-        "image/png",
-        "image/webp",
-        "image/bmp",
-        "image/tiff",
-    ]
-    MAX_FILE_SIZE = 10 * 1024 * 1024  # 10 MB
-
     def validate_file(self, file):
-        # Validar tipo MIME
-        if file.content_type not in self.ALLOWED_MIME_TYPES:
-            raise serializers.ValidationError(
-                f"Tipo de archivo no permitido. Use: {', '.join(self.ALLOWED_MIME_TYPES)}"
-            )
-        # Validar tamaño
-        if file.size > self.MAX_FILE_SIZE:
-            raise serializers.ValidationError(
-                "El archivo no puede superar los 10 MB."
-            )
-        return file
+        return DocumentValidator.validate_document_file(file)
+
+    def validate_document_date(self, value):
+        return DocumentValidator.validate_document_date_not_future(value)
 
     def validate_category_id(self, value):
         if value is not None:
