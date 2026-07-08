@@ -118,8 +118,18 @@ class DocumentService:
         data.update(storage_metadata)
         data["category"] = category
         data["user"] = user
+        data.setdefault("ai_metadata", {})
+        data.setdefault("extracted_text", "")
 
-        return DocumentRepository.create_document(data)
+        try:
+            return DocumentRepository.create_document(data)
+        except Exception:
+            # limpiar archivo huerfano en storage si el insert en bd falla
+            DocumentStorageService.delete_file(
+                storage_metadata.get("bucket_name"),
+                storage_metadata.get("file_key"),
+            )
+            raise
 
     # este no sera utilizado hasta la fecha
     @staticmethod
@@ -221,8 +231,8 @@ class DocumentStorageService:
         return getattr(file, "content_type", None)
 
     @staticmethod
-    def upload_file(user, category, file):
-        # subir archivo a supabase storage y retornar metadata
+    def get_supabase_client():
+        # crea cliente de supabase storage con credenciales de settings
         supabase_url = getattr(settings, "SUPABASE_URL", "")
         supabase_key = getattr(settings, "SUPABASE_SERVICE_KEY", "")
 
@@ -231,6 +241,25 @@ class DocumentStorageService:
                 "storage": "Faltan credenciales de supabase storage."
             })
 
+        from supabase import create_client
+
+        return create_client(supabase_url, supabase_key)
+
+    @staticmethod
+    def delete_file(bucket_name, file_key):
+        # borra archivo huerfano de storage, sin ocultar error original
+        if not bucket_name or not file_key:
+            return
+
+        try:
+            client = DocumentStorageService.get_supabase_client()
+            client.storage.from_(bucket_name).remove([file_key])
+        except Exception as error:
+            print(f"error al limpiar archivo huerfano en storage: {error}")
+
+    @staticmethod
+    def upload_file(user, category, file):
+        # subir archivo a supabase storage y retornar metadata
         bucket_name = DocumentStorageService.get_bucket_by_category(category)
         file_key = DocumentStorageService.generate_file_key(user, category, file)
         mime_type = DocumentStorageService.get_mime_type(file)
@@ -238,9 +267,7 @@ class DocumentStorageService:
 
         # subir a supabase storage
         try:
-            from supabase import create_client
-
-            client = create_client(supabase_url, supabase_key)
+            client = DocumentStorageService.get_supabase_client()
 
             file.seek(0)
             file_bytes = file.read()
