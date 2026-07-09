@@ -3,6 +3,7 @@ import { useAuthStore } from "@/lib/store/auth.store";
 import { api } from "@/lib/api/client";
 import { Pencil, Calendar, User, Droplet, Weight, Ruler, Phone, Activity, Mail, MapPin, Heart, Clock } from "lucide-react";
 import EditProfileModal from "@/components/layout/EditProfileModal";
+import ProfileImageModal from "@/components/layout/ProfileImageModal";
 
 interface Medication {
   id?: string;
@@ -32,6 +33,7 @@ interface MedicalProfile {
   profile_image_url?: string;
   allergies: string[];
   chronic_conditions: string[];
+  relevance_type: string[];
   phone_number: string;
   address: string;
   emergency_contact_name: string;
@@ -56,6 +58,7 @@ export default function ProfilePage() {
   const [profile, setProfile] = useState<MedicalProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [showEdit, setShowEdit] = useState(false);
+  const [showImageEdit, setShowImageEdit] = useState(false);
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -98,12 +101,19 @@ export default function ProfilePage() {
 
           {/* Avatar + nombre + contacto */}
           <div className="flex items-start gap-4 flex-1 md:border-r md:border-gray-300 md:pr-6">
-            <div className="w-16 h-16 md:w-20 md:h-20 rounded-full bg-primary-mid flex items-center justify-center text-white text-xl md:text-2xl font-semibold flex-shrink-0 overflow-hidden">
-              {profile?.profile_image_url ? (
-                <img src={profile.profile_image_url} alt="Foto de perfil" className="w-full h-full object-cover" />
-              ) : (
-                <>{profile?.first_name?.[0]}{profile?.last_name?.[0]}</>
-              )}
+            <div className="relative flex-shrink-0">
+              <div className="w-16 h-16 md:w-20 md:h-20 rounded-full bg-primary-mid flex items-center justify-center text-white text-xl md:text-2xl font-semibold overflow-hidden">
+                {profile?.profile_image_url ? (
+                  <img src={profile.profile_image_url} alt="Foto de perfil" className="w-full h-full object-cover" />
+                ) : (
+                  <>{profile?.first_name?.[0]}{profile?.last_name?.[0]}</>
+                )}
+              </div>
+              <button
+                onClick={() => setShowImageEdit(true)}
+                className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-white border border-gray-200 shadow-sm flex items-center justify-center hover:bg-gray-50 transition-colors">
+                <Pencil size={11} strokeWidth={2.5} className="text-primary-mid" />
+              </button>
             </div>
             <div className="flex-1 min-w-0">
               <h2 className="text-lg md:text-xl font-semibold text-gray-900 mb-2 truncate">
@@ -159,6 +169,29 @@ export default function ProfilePage() {
                     {a}
                   </span>
                 ))
+              }
+              {profile?.relevance_type && profile.relevance_type.length > 0 &&
+                profile.relevance_type.map((r, i) => {
+                  const colors: Record<string, string> = {
+                    critical: "bg-red-100 text-red-700",
+                    high: "bg-orange-100 text-orange-700",
+                    medium: "bg-yellow-100 text-yellow-700",
+                    low: "bg-blue-100 text-blue-700",
+                    informational: "bg-gray-100 text-gray-600",
+                  };
+                  const labels: Record<string, string> = {
+                    critical: "Crítico",
+                    high: "Alta",
+                    medium: "Media",
+                    low: "Baja",
+                    informational: "Informativo",
+                  };
+                  return (
+                    <span key={i} className={`px-3 py-1 text-xs rounded-full font-medium ${colors[r] ?? "bg-gray-100 text-gray-600"}`}>
+                      {labels[r] ?? r}
+                    </span>
+                  );
+                })
               }
             </div>
           </div>
@@ -349,6 +382,20 @@ export default function ProfilePage() {
           onSuccess={(updated) => {
             setProfile(updated);
             setShowEdit(false);
+          }}
+        />
+      )}
+      {showImageEdit && (
+        <ProfileImageModal
+          currentImageUrl={profile?.profile_image_url}
+          onClose={() => setShowImageEdit(false)}
+          onSuccess={(newUrl) => {
+            setProfile((p) => (p ? { ...p, profile_image_url: newUrl } : p));
+            setShowImageEdit(false);
+          }}
+          onDeleted={() => {
+            setProfile((p) => (p ? { ...p, profile_image_url: "" } : p));
+            setShowImageEdit(false);
           }}
         />
       )}

@@ -30,6 +30,7 @@ interface MedicalProfile {
   height: number;
   allergies: string[];
   chronic_conditions: string[];
+  relevance_type: string[];
   phone_number: string;
   address: string;
   emergency_contact_name: string;
@@ -48,6 +49,14 @@ interface Props {
 
 const BLOOD_TYPES = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
 const GENRES = ["Masculino", "Femenino", "No binario", "Otro"];
+
+const RELEVANCE_OPTIONS = [
+  { value: "critical", label: "Crítico" },
+  { value: "high", label: "Alta" },
+  { value: "medium", label: "Media" },
+  { value: "low", label: "Baja" },
+  { value: "informational", label: "Informativo" },
+];
 
 const EMPTY_MEDICATION: Medication = {
   name: "",
@@ -84,6 +93,7 @@ export default function EditProfileModal({ profile, onClose, onSuccess }: Props)
     ...profile,
     current_medications: profile.current_medications ?? [],
     recent_medical_history: profile.recent_medical_history ?? [],
+    relevance_type: profile.relevance_type ?? [],
   });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -96,6 +106,19 @@ export default function EditProfileModal({ profile, onClose, onSuccess }: Props)
     } else {
       setForm((f) => ({ ...f, [name]: name === "weight" || name === "height" ? Number(value) : value }));
     }
+  };
+
+  // Agrega o quita un valor del array relevance_type al marcar/desmarcar el checkbox
+  const toggleRelevanceType = (value: string) => {
+    setForm((f) => {
+      const has = f.relevance_type.includes(value);
+      return {
+        ...f,
+        relevance_type: has
+          ? f.relevance_type.filter((v) => v !== value)
+          : [...f.relevance_type, value],
+      };
+    });
   };
 
   // Maneja cambios dentro de un medicamento especifico por indice
@@ -168,6 +191,7 @@ export default function EditProfileModal({ profile, onClose, onSuccess }: Props)
         ...form,
         current_medications: cleanedMedications,
         recent_medical_history: cleanedHistory,
+        relevance_type: form.relevance_type,
         email: user?.email,
       });
       onSuccess({ ...form, current_medications: cleanedMedications, recent_medical_history: cleanedHistory });
@@ -297,6 +321,28 @@ export default function EditProfileModal({ profile, onClose, onSuccess }: Props)
                   placeholder="Ej: Hipertensión, Diabetes"
                   className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-primary-mid" />
                 <p className="text-xs text-gray-400 mt-1">Separadas por coma</p>
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-2">Relevancia clínica</label>
+                <div className="flex flex-wrap gap-2">
+                  {RELEVANCE_OPTIONS.map((opt) => (
+                    <label
+                      key={opt.value}
+                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs cursor-pointer transition-colors ${
+                        form.relevance_type.includes(opt.value)
+                          ? "bg-primary-light border-primary-mid text-primary-mid"
+                          : "border-gray-200 text-gray-500 hover:bg-gray-50"
+                      }`}>
+                      <input
+                        type="checkbox"
+                        checked={form.relevance_type.includes(opt.value)}
+                        onChange={() => toggleRelevanceType(opt.value)}
+                        className="hidden"
+                      />
+                      {opt.label}
+                    </label>
+                  ))}
+                </div>
               </div>
             </div>
           )}
