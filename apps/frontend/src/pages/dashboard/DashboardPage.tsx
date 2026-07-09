@@ -10,47 +10,65 @@ import iconoRecetas from "@/assets/img/icono-recetas.png";
 import UploadDocumentModal from "@/components/layout/UploadDocumentModal";
 import { api } from "@/lib/api/client";
 
+// Documento tal como lo devuelve DocumentSerializer: las claves son las de la
+// izquierda de cada CharField(source=...), no el nombre de columna del modelo.
 interface Document {
   id: string;
   title: string;
-  doc_type: string;
+  document_type: string;
   document_date: string | null;
-  created_at: string;
-  issuing_institution: string | null;
-  issuing_professional: string | null;
+  medical_center: string | null;
+  doctor_name: string | null;
   file_url: string | null;
   mime_type: string | null;
 }
 
-const CATEGORIAS = ["Todos", "Examen", "Receta", "Licencia"];
+// Traduce el valor real de doc_type (backend) a una etiqueta en español
+const DOC_TYPE_LABELS: Record<string, string> = {
+  exam: "Examen",
+  prescription: "Receta",
+  sick_leave: "Licencia",
+  report: "Certificado",
+  vaccine: "Vacuna",
+  other: "Otro",
+};
+
+// Pestañas de filtro: label visible + valor real que se compara contra document_type
+const CATEGORIAS: { label: string; value: string | null }[] = [
+  { label: "Todos", value: null },
+  { label: "Examen", value: "exam" },
+  { label: "Receta", value: "prescription" },
+  { label: "Licencia", value: "sick_leave" },
+];
 
 export default function DashboardPage() {
   const user = useAuthStore((s) => s.user);
-  const [activeTab, setActiveTab] = useState("Todos");
+  const [activeTab, setActiveTab] = useState<string | null>(null);
   const [showUpload, setShowUpload] = useState(false);
   const [documentos, setDocumentos] = useState<Document[]>([]);
   const [loadingDocs, setLoadingDocs] = useState(true);
   const [selectedDoc, setSelectedDoc] = useState<Document | null>(null);
 
+  const fetchDocuments = async () => {
+    try {
+      const res = await api.get(`/documents/?email=${user?.email}`);
+      setDocumentos(res.data.documents);
+    } catch (err) {
+      console.error("Error al cargar documentos:", err);
+    } finally {
+      setLoadingDocs(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchDocuments = async () => {
-      try {
-        const res = await api.get(`/documents/?email=${user?.email}`);
-        setDocumentos(res.data.documents);
-      } catch (err) {
-        console.error("Error al cargar documentos:", err);
-      } finally {
-        setLoadingDocs(false);
-      }
-    };
     if (user?.email) fetchDocuments();
   }, [user?.email]);
 
   const STATS = [
-    { label: "Exámenes",   value: documentos.filter(d => d.doc_type === "EXAMENES").length,  icono: iconoExamenes,  border: "border-b-categoria-examenes"  },
-    { label: "Recetas",    value: documentos.filter(d => d.doc_type === "RECETA").length,    icono: iconoRecetas,   border: "border-b-categoria-recetas"   },
-    { label: "Licencias",  value: documentos.filter(d => d.doc_type === "LICENCIA").length,  icono: iconoLicencias, border: "border-b-categoria-licencias" },
-    { label: "Documentos", value: documentos.length,                                         icono: iconoDocumentos,border: "border-b-categoria-documentos"},
+    { label: "Exámenes",   value: documentos.filter(d => d.document_type === "exam").length,        icono: iconoExamenes,  border: "border-b-categoria-examenes"  },
+    { label: "Recetas",    value: documentos.filter(d => d.document_type === "prescription").length, icono: iconoRecetas,   border: "border-b-categoria-recetas"   },
+    { label: "Licencias",  value: documentos.filter(d => d.document_type === "sick_leave").length,   icono: iconoLicencias, border: "border-b-categoria-licencias" },
+    { label: "Documentos", value: documentos.length,                                                  icono: iconoDocumentos,border: "border-b-categoria-documentos"},
   ];
 
   const handleDelete = async (id: string) => {
@@ -63,6 +81,58 @@ export default function DashboardPage() {
       alert("No se pudo eliminar el documento.");
     }
   };
+
+  // Descarga el archivo forzando el nombre del documento en vez de abrir una pestaña nueva
+  const handleDownload = async (doc: Document) => {
+    if (!doc.file_url) {
+      alert("Este documento no tiene un archivo asociado.");
+      return;
+    }
+    try {
+      const response = await fetch(doc.file_url);
+      const blob = await response.blob();
+      const blobUrl = URL.createObjectURL(blob);
+      const extension = doc.mime_type?.split("/")[1] ?? "";
+      const link = document.createElement("a");
+      link.href = blobUrl;
+      link.download = extension ? `${doc.title}.${extension}` : doc.title;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(blobUrl);
+    } catch (err) {
+      console.error("Error al descargar el documento:", err);
+      // Si falla la descarga forzada (ej. por CORS), al menos abre el archivo en una pestaña nueva
+      window.open(doc.file_url, "_blank");
+    }
+  };
+
+  // Comparte el link del documento usando la API nativa del navegador, o lo copia al portapapeles
+  const handleShare = async (doc: Document) => {
+    if (!doc.file_url) {
+      alert("Este documento no tiene un archivo asociado.");
+      return;
+    }
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: doc.title, url: doc.file_url });
+      } catch (err) {
+        // el usuario cancelo el share, no hacemos nada
+      }
+    } else {
+      try {
+        await navigator.clipboard.writeText(doc.file_url);
+        alert("Enlace copiado al portapapeles.");
+      } catch (err) {
+        console.error("Error al copiar el enlace:", err);
+        alert("No se pudo copiar el enlace.");
+      }
+    }
+  };
+
+  const documentosFiltrados = documentos.filter(
+    (doc) => activeTab === null || doc.document_type === activeTab
+  );
 
   return (
     <div className="p-4 md:p-6">
@@ -116,15 +186,15 @@ export default function DashboardPage() {
             <div className="flex gap-2 mb-4 overflow-x-auto pb-1">
               {CATEGORIAS.map((tab) => (
                 <button
-                  key={tab}
-                  onClick={() => setActiveTab(tab)}
+                  key={tab.label}
+                  onClick={() => setActiveTab(tab.value)}
                   className={`px-4 py-1.5 rounded-full text-sm transition-colors flex-shrink-0 ${
-                    activeTab === tab
+                    activeTab === tab.value
                       ? "bg-primary-mid text-white font-medium"
                       : "text-gray-500 hover:bg-gray-100"
                   }`}
                 >
-                  {tab}
+                  {tab.label}
                 </button>
               ))}
             </div>
@@ -135,24 +205,24 @@ export default function DashboardPage() {
                 <p className="text-sm text-gray-400 text-center py-4">Cargando documentos...</p>
               ) : documentos.length === 0 ? (
                 <p className="text-sm text-gray-400 text-center py-4">No hay documentos registrados.</p>
+              ) : documentosFiltrados.length === 0 ? (
+                <p className="text-sm text-gray-400 text-center py-4">No hay documentos en esta categoría.</p>
               ) : (
-                documentos
-                  .filter((doc) => activeTab === "Todos" || doc.doc_type === activeTab)
-                  .map((doc) => (
+                documentosFiltrados.map((doc) => (
                     <div key={doc.id} className="flex items-center gap-2 md:gap-4 py-3">
                       <div className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center text-sm flex-shrink-0">
                         📄
                       </div>
                       <p className="flex-1 min-w-0 text-sm text-gray-700 font-medium truncate">{doc.title}</p>
                       <span className="hidden sm:inline px-3 py-0.5 rounded-full text-xs font-medium flex-shrink-0 bg-gray-100 text-gray-600">
-                        {doc.doc_type}
+                        {DOC_TYPE_LABELS[doc.document_type] ?? doc.document_type}
                       </span>
                       <p className="hidden md:block text-xs text-gray-400 w-24 text-right flex-shrink-0">
                         {doc.document_date ? new Date(doc.document_date + "T00:00:00").toLocaleDateString("es-CL") : "—"}
                       </p>
                       <div className="flex gap-2 md:gap-3 text-gray-400 flex-shrink-0">
-                        <button className="hover:text-primary-mid transition-colors"><Download size={15} /></button>
-                        <button className="hover:text-primary-mid transition-colors"><ShareIcon size={15} /></button>
+                        <button onClick={() => handleDownload(doc)} className="hover:text-primary-mid transition-colors"><Download size={15} /></button>
+                        <button onClick={() => handleShare(doc)} className="hover:text-primary-mid transition-colors"><ShareIcon size={15} /></button>
                         <button
                           onClick={() => setSelectedDoc(doc)}
                           className="hover:text-primary-mid transition-colors">
@@ -220,7 +290,10 @@ export default function DashboardPage() {
       {showUpload && (
         <UploadDocumentModal
           onClose={() => setShowUpload(false)}
-          onSuccess={() => setShowUpload(false)}
+          onSuccess={() => {
+            setShowUpload(false);
+            fetchDocuments();
+          }}
         />
       )}
 
@@ -237,7 +310,9 @@ export default function DashboardPage() {
             <dl className="grid grid-cols-2 gap-3 text-sm">
               <div>
                 <dt className="text-xs text-gray-400">Tipo</dt>
-                <dd className="font-medium text-gray-900">{selectedDoc.doc_type}</dd>
+                <dd className="font-medium text-gray-900">
+                  {DOC_TYPE_LABELS[selectedDoc.document_type] ?? selectedDoc.document_type}
+                </dd>
               </div>
               <div>
                 <dt className="text-xs text-gray-400">Fecha</dt>
@@ -249,11 +324,11 @@ export default function DashboardPage() {
               </div>
               <div>
                 <dt className="text-xs text-gray-400">Centro médico</dt>
-                <dd className="font-medium text-gray-900">{selectedDoc.issuing_institution || "—"}</dd>
+                <dd className="font-medium text-gray-900">{selectedDoc.medical_center || "—"}</dd>
               </div>
               <div>
                 <dt className="text-xs text-gray-400">Médico</dt>
-                <dd className="font-medium text-gray-900">{selectedDoc.issuing_professional || "—"}</dd>
+                <dd className="font-medium text-gray-900">{selectedDoc.doctor_name || "—"}</dd>
               </div>
               <div>
                 <dt className="text-xs text-gray-400">Tipo de archivo</dt>

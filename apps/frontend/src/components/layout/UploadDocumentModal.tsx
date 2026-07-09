@@ -14,10 +14,14 @@ interface Props {
   onSuccess: () => void;
 }
 
+// Debe coincidir exactamente con Document.DocType en el backend (models.py)
 const DOCUMENT_TYPES = [
-  { label: "Exámen",      value: "exam"         },
-  { label: "Receta",      value: "prescription" },
-  { label: "Certificado", value: "report"       },
+  { label: "Exámen",           value: "exam"         },
+  { label: "Receta",           value: "prescription" },
+  { label: "Licencia médica",  value: "sick_leave"   },
+  { label: "Certificado",      value: "report"       },
+  { label: "Vacuna",           value: "vaccine"       },
+  { label: "Otro",             value: "other"        },
 ];
 
 export default function UploadDocumentModal({ onClose, onSuccess }: Props) {
