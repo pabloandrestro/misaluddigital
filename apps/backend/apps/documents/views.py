@@ -158,3 +158,84 @@ def document_categories_view(request):
             "status": "error",
             "message": "Error interno del servidor."
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+@api_view(["GET"])
+@permission_classes([AllowAny])
+def document_download_view(request, document_id):
+    email = request.query_params.get("email")
+    rut = request.query_params.get("rut")
+
+    try:
+        data = DocumentService.get_document_download_url(
+            document_id=document_id,
+            email=email,
+            rut=rut
+        )
+
+        return Response(
+            {
+                "status": "success",
+                "download_url": data["download_url"],
+                "expires_in": data["expires_in"],
+            },
+            status=status.HTTP_200_OK
+        )
+
+    except serializers.ValidationError as error:
+        return Response(
+            {
+                "status": "error",
+                "errors": error.detail,
+            },
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+    except Exception:
+        return Response(
+            {
+                "status": "error",
+                "message": "Error interno del servidor.",
+            },
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+
+@api_view(["GET"])
+@permission_classes([AllowAny])
+def document_view_view(request, document_id):
+    email = request.query_params.get("email")
+    rut = request.query_params.get("rut")
+
+    try:
+        data = DocumentService.get_document_view_url(
+            document_id=document_id,
+            email=email,
+            rut=rut
+        )
+
+        return Response(
+            {
+                "status": "success",
+                "view_url": data["view_url"],
+                "mime_type": data["mime_type"],
+                "expires_in": data["expires_in"],
+            },
+            status=status.HTTP_200_OK
+        )
+
+    except serializers.ValidationError as error:
+        return Response(
+            {
+                "status": "error",
+                "errors": error.detail,
+            },
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+    except Exception:
+        return Response(
+            {
+                "status": "error",
+                "message": "Error interno del servidor.",
+            },
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )

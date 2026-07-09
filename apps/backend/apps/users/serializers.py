@@ -236,9 +236,9 @@ class MedicalProfileSerializer(serializers.ModelSerializer):
         }
         return UserValidator.validate_json_list_of_dicts(value, "recent_medical_history", schema)
 
-    # Lista de strings, cada uno max 50 caracteres
+    # lista de strings, valores cerrados: critical, high, medium, low, informational
     def validate_relevance_type(self, value):
-        return UserValidator.validate_json_list_of_strings(value, "relevance_type", max_length=50)
+        return UserValidator.validate_relevance_type(value)
 
     # Lista de strings, cada uno max 100 caracteres
     def validate_allergies(self, value):

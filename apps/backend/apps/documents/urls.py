@@ -1,9 +1,10 @@
 from django.urls import path
-
 from .views import (
     documents_view,
     document_detail_view,
     document_categories_view,
+    document_download_view,
+    document_view_view,
 )
 
 urlpatterns = [
@@ -15,4 +16,6 @@ urlpatterns = [
 
     # maneja detalle, actualizacion y eliminacion por documento
     path("<uuid:document_id>/", document_detail_view, name="document_detail"),
+    path("<uuid:document_id>/download/",document_download_view,name="document-download"),
+    path("<uuid:document_id>/view/", document_view_view, name="document_view_view"),
 ]

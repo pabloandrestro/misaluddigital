@@ -4,6 +4,15 @@ from rest_framework import serializers
 from PIL import Image, UnidentifiedImageError
 
 class UserValidator:
+    # valores cerrados permitidos para relevance_type
+    VALID_RELEVANCE_TYPES = {
+        "critical",
+        "high",
+        "medium",
+        "low",
+        "informational",
+    }
+
     PROFILE_IMAGE_ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp"]
     PROFILE_IMAGE_ALLOWED_EXTENSIONS = [".jpg", ".jpeg", ".png", ".webp"]
     PROFILE_IMAGE_MAX_SIZE = 5 * 1024 * 1024
@@ -175,6 +184,41 @@ class UserValidator:
                     f"'{field_name}[{i}]' no puede tener más de {max_length} caracteres."
                 )
         return value
+
+    # valida que relevance_type sea lista de strings de valores cerrados
+    @staticmethod
+    def validate_relevance_type(value):
+        if value in (None, ""):
+            return []
+
+        if not isinstance(value, list):
+            raise serializers.ValidationError(
+                "relevance_type debe ser una lista."
+            )
+
+        clean_values = []
+
+        for index, item in enumerate(value):
+            if not isinstance(item, str):
+                raise serializers.ValidationError(
+                    f"'relevance_type[{index}]' debe ser un string."
+                )
+
+            clean_item = item.strip().lower()
+
+            if not clean_item:
+                raise serializers.ValidationError(
+                    f"'relevance_type[{index}]' no puede estar vacio."
+                )
+
+            if clean_item not in UserValidator.VALID_RELEVANCE_TYPES:
+                raise serializers.ValidationError(
+                    f"'relevance_type[{index}]' no es valido. Valores permitidos: critical, high, medium, low, informational."
+                )
+
+            clean_values.append(clean_item)
+
+        return clean_values
 
     # Valida un array de dicts aplicando un schema de reglas (required, max_length, type)
     @staticmethod

@@ -10,7 +10,6 @@ from .repositories import DocumentRepository, DocumentCategoryRepository
 
 
 class DocumentService:
-
     @staticmethod
     def get_user_by_identifier(email=None, rut=None):
         # validar y buscar usuario por email o rut
@@ -156,6 +155,7 @@ class DocumentService:
 
         return DocumentRepository.save_document(document)
 
+    # Eliminacion del documento mediante softdelete
     @staticmethod
     def delete_document(document):
         if not DocumentService.validate_document_exists(document):
@@ -177,6 +177,90 @@ class DocumentService:
     def validate_category_exists(category):
         return category is not None
 
+    @staticmethod
+    def get_document_download_url(document_id, email=None, rut=None):
+        expires_in = 300
+
+        if not email and not rut:
+            raise serializers.ValidationError({
+                "identifier": "Debe enviar email o rut."
+            })
+
+        user = UserService.get_user_by_identifier(email=email, rut=rut)
+
+        if not user:
+            raise serializers.ValidationError({
+                "user": "Usuario no encontrado."
+            })
+
+        document = DocumentRepository.get_active_by_id_and_user(
+            document_id=document_id,
+            user=user
+        )
+
+        if not document:
+            raise serializers.ValidationError({
+                "document": "Documento no encontrado."
+            })
+
+        if not document.bucket_name or not document.file_key:
+            raise serializers.ValidationError({
+                "document": "El documento no tiene metadata de storage valida."
+            })
+
+        signed_url = DocumentStorageService.create_signed_url(
+            bucket_name=document.bucket_name,
+            file_key=document.file_key,
+            expires_in=expires_in
+        )
+
+        return {
+            "download_url": signed_url,
+            "expires_in": expires_in,
+        }
+
+    # visualizar documento
+    @staticmethod
+    def get_document_view_url(document_id, email=None, rut=None):
+        expires_in = 300
+
+        if not email and not rut:
+            raise serializers.ValidationError({
+                "identifier": "Debe enviar email o rut."
+            })
+
+        user = UserService.get_user_by_identifier(email=email, rut=rut)
+
+        if not user:
+            raise serializers.ValidationError({
+                "user": "Usuario no encontrado."
+            })
+
+        document = DocumentRepository.get_active_by_id_and_user(
+            document_id=document_id,
+            user=user)
+
+        if not document:
+            raise serializers.ValidationError({
+                "document": "Documento no encontrado."
+            })
+
+        if not document.bucket_name or not document.file_key:
+            raise serializers.ValidationError({
+                "document": "El documento no tiene metadata de storage valida."
+            })
+
+        signed_url = DocumentStorageService.create_signed_url(
+            bucket_name=document.bucket_name,
+            file_key=document.file_key,
+            expires_in=expires_in
+        )
+
+        return {
+            "view_url": signed_url,
+            "mime_type": document.mime_type,
+            "expires_in": expires_in,
+        }
 
 # mapping de category slug a bucket de supabase storage
 CATEGORY_BUCKETS = {
@@ -188,6 +272,7 @@ CATEGORY_BUCKETS = {
 
 class DocumentStorageService:
 
+    # Conseguir el bucket por el category_id
     @staticmethod
     def get_bucket_by_category(category):
         # validar que category exista y tenga slug
@@ -205,6 +290,7 @@ class DocumentStorageService:
 
         return bucket_name
 
+    # obtener la extension del archivo
     @staticmethod
     def get_file_extension(file):
         # obtener extension desde file.name
@@ -212,6 +298,7 @@ class DocumentStorageService:
 
         return extension.lower()
 
+    # generar la key para el archivo
     @staticmethod
     def generate_file_key(user, category, file):
         # genera ruta: documents/<user_id>/<category_slug>/<uuid>.<ext>
@@ -220,16 +307,19 @@ class DocumentStorageService:
 
         return f"documents/{user.id}/{category.slug}/{unique_name}{extension}"
 
+    # conseguir el tamanho del archivo
     @staticmethod
     def get_file_size_bytes(file):
         # retorna tamano del archivo en bytes
         return file.size
 
+    # cosneguir el MYME TYPE
     @staticmethod
     def get_mime_type(file):
         # retorna content type del archivo
         return getattr(file, "content_type", None)
 
+    # CONSEGUIR Y CREAR EL CLIENTE SUPABASE
     @staticmethod
     def get_supabase_client():
         # crea cliente de supabase storage con credenciales de settings
@@ -245,6 +335,7 @@ class DocumentStorageService:
 
         return create_client(supabase_url, supabase_key)
 
+    # ELIMINAR EL DOCUMENTO DEL STORAGE
     @staticmethod
     def delete_file(bucket_name, file_key):
         # borra archivo huerfano de storage, sin ocultar error original
@@ -257,6 +348,7 @@ class DocumentStorageService:
         except Exception as error:
             print(f"error al limpiar archivo huerfano en storage: {error}")
 
+    # SUBIR DOCUMENTO EN EL STORAGE
     @staticmethod
     def upload_file(user, category, file):
         # subir archivo a supabase storage y retornar metadata
@@ -294,13 +386,42 @@ class DocumentStorageService:
             "extracted_text": "",
         }
 
+    # CREAR URL SIGNED PARA DESCARGA Y VISUALIZACION
+    @staticmethod
+    def create_signed_url(bucket_name, file_key, expires_in=300):
+        client = DocumentStorageService.get_supabase_client()
 
+        response = client.storage.from_(bucket_name).create_signed_url(
+            file_key,
+            expires_in
+        )
+
+        if isinstance(response, dict):
+            signed_url = (
+                    response.get("signedURL")
+                    or response.get("signed_url")
+                    or response.get("signedUrl")
+            )
+        else:
+            signed_url = (
+                    getattr(response, "signedURL", None)
+                    or getattr(response, "signed_url", None)
+                    or getattr(response, "signedUrl", None)
+            )
+
+        if not signed_url:
+            raise ValueError("No se pudo generar la URL temporal del documento.")
+
+        return signed_url
+
+# DOCUMENT CATEGORY SERVICE
 class DocumentCategoryService:
-
+    # Listar todas las categorias
     @staticmethod
     def get_categories():
         return DocumentCategoryRepository.get_all()
 
+    # Listar por ID
     @staticmethod
     def get_category_by_id(category_id):
         category = DocumentCategoryRepository.get_by_id(category_id)
