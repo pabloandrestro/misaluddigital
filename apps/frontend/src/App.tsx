@@ -11,6 +11,7 @@ import DashboardPage   from "@/pages/dashboard/DashboardPage";
 import DocumentsPage   from "@/pages/dashboard/DocumentsPage";
 import ProfilePage     from "@/pages/dashboard/ProfilePage";
 import AiInsightsPage  from "@/pages/dashboard/AiInsightsPage";
+import ConfiguracionPage from "@/pages/dashboard/ConfiguracionPage";
 
 // Portal médico (público)
 import SharePage       from "@/pages/share/SharePage";
@@ -45,6 +46,7 @@ export default function App() {
         <Route path="documents"  element={<DocumentsPage />} />
         <Route path="profile"    element={<ProfilePage />} />
         <Route path="ai-insights" element={<AiInsightsPage />} />
+        <Route path="settings"   element={<ConfiguracionPage />} />
       </Route>
 
       {/* Fallback */}

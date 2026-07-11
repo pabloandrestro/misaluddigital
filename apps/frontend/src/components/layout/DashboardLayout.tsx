@@ -1,14 +1,14 @@
 import { useState } from "react";
 import { Outlet, NavLink, useNavigate } from "react-router-dom";
 import { useAuthStore } from "@/lib/store/auth.store";
-import { UserCircle, LayoutDashboard, FolderOpen, User, Sparkles, Settings, LogOut, Bell, HelpCircle, Search, Menu, X } from "lucide-react";
+import { UserCircle, LayoutDashboard, FolderOpen, User, Bot, Settings, LogOut, Bell, HelpCircle, Search, Menu, X } from "lucide-react";
 import logoWhite from "@/assets/img/logo-white.png";
 
 const NAV = [
   { path: "/",            label: "Panel principal", icon: LayoutDashboard },
   { path: "/documents",   label: "Mis documentos",  icon: FolderOpen },
   { path: "/profile",     label: "Perfil médico",   icon: User },
-  { path: "/ai-insights", label: "Análisis IA",     icon: Sparkles },
+  { path: "/ai-insights", label: "Asistente IA",    icon: Bot },
   { path: "/settings",    label: "Configuración",   icon: Settings },
 ];
 

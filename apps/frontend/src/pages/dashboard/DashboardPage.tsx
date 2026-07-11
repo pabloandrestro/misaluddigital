@@ -20,6 +20,7 @@ interface Document {
   medical_center: string | null;
   doctor_name: string | null;
   file_url: string | null;
+  file_key: string | null;
   mime_type: string | null;
 }
 
@@ -82,51 +83,81 @@ export default function DashboardPage() {
     }
   };
 
-  // Descarga el archivo forzando el nombre del documento en vez de abrir una pestaña nueva
+  // Descarga el archivo usando el endpoint de signed URL temporal
   const handleDownload = async (doc: Document) => {
-    if (!doc.file_url) {
-      alert("Este documento no tiene un archivo asociado.");
-      return;
-    }
     try {
-      const response = await fetch(doc.file_url);
-      const blob = await response.blob();
-      const blobUrl = URL.createObjectURL(blob);
-      const extension = doc.mime_type?.split("/")[1] ?? "";
-      const link = document.createElement("a");
-      link.href = blobUrl;
-      link.download = extension ? `${doc.title}.${extension}` : doc.title;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(blobUrl);
-    } catch (err) {
+      const res = await api.get(`/documents/${doc.id}/download/?email=${user?.email}`);
+      const downloadUrl = res.data?.download_url;
+
+      if (!downloadUrl) {
+        alert("No se pudo obtener el enlace de descarga.");
+        return;
+      }
+
+      // intenta forzar la descarga con el nombre del documento
+      try {
+        const fileRes = await fetch(downloadUrl);
+        const blob = await fileRes.blob();
+        const blobUrl = URL.createObjectURL(blob);
+        const extension = doc.mime_type?.split("/")[1] ?? "";
+        const link = document.createElement("a");
+        link.href = blobUrl;
+        link.download = extension ? `${doc.title}.${extension}` : doc.title;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(blobUrl);
+      } catch {
+        // si falla el fetch directo (ej. CORS), abre el link firmado en una pestaña nueva
+        window.open(downloadUrl, "_blank");
+      }
+    } catch (err: any) {
       console.error("Error al descargar el documento:", err);
-      // Si falla la descarga forzada (ej. por CORS), al menos abre el archivo en una pestaña nueva
-      window.open(doc.file_url, "_blank");
+      alert(err?.response?.data?.message ?? "No se pudo descargar el documento.");
     }
   };
 
-  // Comparte el link del documento usando la API nativa del navegador, o lo copia al portapapeles
+  // Comparte el link de visualizacion (signed URL temporal) via share nativo o portapapeles
   const handleShare = async (doc: Document) => {
-    if (!doc.file_url) {
-      alert("Este documento no tiene un archivo asociado.");
-      return;
+    try {
+      const res = await api.get(`/documents/${doc.id}/view/?email=${user?.email}`);
+      const viewUrl = res.data?.view_url;
+
+      if (!viewUrl) {
+        alert("No se pudo obtener el enlace para compartir.");
+        return;
+      }
+
+      if (navigator.share) {
+        try {
+          await navigator.share({ title: doc.title, url: viewUrl });
+        } catch {
+          // el usuario cancelo el share, no hacemos nada
+        }
+      } else {
+        await navigator.clipboard.writeText(viewUrl);
+        alert("Enlace copiado al portapapeles. Válido por tiempo limitado.");
+      }
+    } catch (err: any) {
+      console.error("Error al compartir el documento:", err);
+      alert(err?.response?.data?.message ?? "No se pudo generar el enlace para compartir.");
     }
-    if (navigator.share) {
-      try {
-        await navigator.share({ title: doc.title, url: doc.file_url });
-      } catch (err) {
-        // el usuario cancelo el share, no hacemos nada
+  };
+
+  // Pide un link de visualizacion fresco y lo abre en una pestaña nueva
+  const handleViewFile = async (doc: Document) => {
+    try {
+      const res = await api.get(`/documents/${doc.id}/view/?email=${user?.email}`);
+      const viewUrl = res.data?.view_url;
+
+      if (!viewUrl) {
+        alert("No se pudo obtener el enlace del archivo.");
+        return;
       }
-    } else {
-      try {
-        await navigator.clipboard.writeText(doc.file_url);
-        alert("Enlace copiado al portapapeles.");
-      } catch (err) {
-        console.error("Error al copiar el enlace:", err);
-        alert("No se pudo copiar el enlace.");
-      }
+      window.open(viewUrl, "_blank");
+    } catch (err: any) {
+      console.error("Error al abrir el documento:", err);
+      alert(err?.response?.data?.message ?? "No se pudo abrir el archivo.");
     }
   };
 
@@ -341,11 +372,12 @@ export default function DashboardPage() {
                 className="flex-1 py-2 rounded-lg border border-gray-200 text-sm text-gray-600 hover:bg-gray-50 transition-colors">
                 Cerrar
               </button>
-              {selectedDoc.file_url && (
-                <a href={selectedDoc.file_url} target="_blank" rel="noreferrer"
+              {selectedDoc.file_key && (
+                <button
+                  onClick={() => handleViewFile(selectedDoc)}
                   className="flex-1 py-2 rounded-lg bg-primary-mid text-white text-sm font-medium text-center hover:bg-primary-dark transition-colors">
                   Ver archivo
-                </a>
+                </button>
               )}
             </div>
           </div>
