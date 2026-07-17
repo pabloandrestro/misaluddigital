@@ -1,24 +1,29 @@
+from django.utils import timezone
 from .models import TemporaryAccessLink
 
 
 class TemporaryAccessLinkRepository:
 
-    # todo: implementar creacion de enlace de acceso temporal
+    # crea y retorna un nuevo enlace de acceso temporal
     @staticmethod
     def create(data):
-        pass
+        return TemporaryAccessLink.objects.create(**data)
 
-    # todo: implementar busqueda por token sin validar expiracion
+    # busca un enlace por token sin validar expiracion
     @staticmethod
     def get_by_token(token):
-        pass
+        return TemporaryAccessLink.objects.filter(token=token).first()
 
-    # todo: implementar busqueda por token validando que no haya expirado
+    # busca un enlace activo por token validando que no este expirado
     @staticmethod
     def get_active_by_token(token):
-        pass
+        return TemporaryAccessLink.objects.filter(
+            token=token,
+            expires_at__gt=timezone.now()
+        ).first()
 
-    # todo: implementar persistencia del enlace
+    # guarda los cambios de un enlace en la base de datos
     @staticmethod
     def save(link):
-        pass
+        link.save()
+        return link
