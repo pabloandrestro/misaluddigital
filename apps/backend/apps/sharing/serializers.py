@@ -18,7 +18,7 @@ class ShareDocumentSerializer(serializers.Serializer):
     )
 
     # horas de validez del enlace (mínimo 1h, máximo 7 días = 168h)
-    expires_in_hours = serializers.IntegerField(min_value=1, max_value=168)
+    expires_in_hours = serializers.IntegerField(min_value=1, max_value=168, required=False, default=24)
 
     def validate_professional_rut(self, value):
         """Valida formato y dígito verificador del RUT usando UserValidator."""

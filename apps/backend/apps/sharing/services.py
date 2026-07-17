@@ -107,7 +107,11 @@ class ShareDocumentService:
         # buscar y generar signed urls para documentos asociados
         documents_list = []
         for doc_id in link.document_ids:
-            doc = Document.objects.filter(id=doc_id, deleted_at__isnull=True).first()
+            doc = Document.objects.filter(
+                id=doc_id,
+                user=link.user,
+                deleted_at__isnull=True
+            ).first()
             if doc:
                 signed_url = DocumentStorageService.create_signed_url(
                     doc.bucket_name,
