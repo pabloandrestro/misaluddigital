@@ -877,6 +877,447 @@
         "description": "Caso negativo: sin email ni rut como identificador, debe devolver 400.\n\nGenerated from cURL: curl --request GET --url '{{base_url}}/api/auth/profile/image/'"
       },
       "response": []
+    },
+    {
+      "name": "Account Settings",
+      "item": [
+        {
+          "name": "01 - Get account settings by email",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Status is success', function () {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json.status).to.eql('success');",
+                  "});",
+                  "pm.test('Account exists in response', function () {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json).to.have.property('account');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/auth/account/settings/?email={{test_email}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "auth", "account", "settings", ""],
+              "query": [{ "key": "email", "value": "{{test_email}}" }]
+            },
+            "description": "Obtiene la configuracion de cuenta buscando por email."
+          },
+          "response": []
+        },
+        {
+          "name": "02 - Get account settings by rut",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Status is success', function () {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json.status).to.eql('success');",
+                  "});",
+                  "pm.test('Account exists in response', function () {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json).to.have.property('account');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/auth/account/settings/?rut={{test_rut}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "auth", "account", "settings", ""],
+              "query": [{ "key": "rut", "value": "{{test_rut}}" }]
+            },
+            "description": "Obtiene la configuracion de cuenta buscando por rut."
+          },
+          "response": []
+        },
+        {
+          "name": "03 - Get account settings without identifier (negative)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 400', function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "pm.test('Status is error', function () {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json.status).to.eql('error');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/auth/account/settings/",
+              "host": ["{{base_url}}"],
+              "path": ["api", "auth", "account", "settings", ""]
+            },
+            "description": "Caso negativo: sin email ni rut, debe devolver 400."
+          },
+          "response": []
+        },
+        {
+          "name": "04 - Get account settings nonexistent user (negative)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 404', function () {",
+                  "    pm.response.to.have.status(404);",
+                  "});",
+                  "pm.test('Status is error', function () {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json.status).to.eql('error');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/auth/account/settings/?email=noexiste@test.com",
+              "host": ["{{base_url}}"],
+              "path": ["api", "auth", "account", "settings", ""],
+              "query": [{ "key": "email", "value": "noexiste@test.com" }]
+            },
+            "description": "Caso negativo: usuario no encontrado, debe devolver 404."
+          },
+          "response": []
+        },
+        {
+          "name": "05 - Patch update name",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Status is success', function () {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json.status).to.eql('success');",
+                  "});",
+                  "pm.test('Account name updated', function () {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json.account.name).to.eql('Nombre Actualizado');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Nombre Actualizado\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/auth/account/settings/?email={{test_email}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "auth", "account", "settings", ""],
+              "query": [{ "key": "email", "value": "{{test_email}}" }]
+            },
+            "description": "Actualiza el name de la cuenta."
+          },
+          "response": []
+        },
+        {
+          "name": "06 - Patch update name empty (negative)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 400', function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "pm.test('Status is error', function () {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json.status).to.eql('error');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/auth/account/settings/?email={{test_email}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "auth", "account", "settings", ""],
+              "query": [{ "key": "email", "value": "{{test_email}}" }]
+            },
+            "description": "Caso negativo: name vacio, debe devolver 400."
+          },
+          "response": []
+        },
+        {
+          "name": "07 - Patch change password correct",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Status is success', function () {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json.status).to.eql('success');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"current_password\": \"{{test_password}}\",\n  \"new_password\": \"{{new_password}}\",\n  \"confirm_password\": \"{{new_password}}\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/auth/account/settings/?email={{test_email}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "auth", "account", "settings", ""],
+              "query": [{ "key": "email", "value": "{{test_email}}" }]
+            },
+            "description": "Cambia la password de test_password a new_password. Requests posteriores (08-11) asumen que la password actual ya es new_password."
+          },
+          "response": []
+        },
+        {
+          "name": "08 - Patch current_password incorrect (negative)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 400', function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "pm.test('Error contains current_password', function () {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json.status).to.eql('error');",
+                  "    pm.expect(json.errors).to.have.property('current_password');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"current_password\": \"incorrecta123\",\n  \"new_password\": \"{{new_password}}\",\n  \"confirm_password\": \"{{new_password}}\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/auth/account/settings/?email={{test_email}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "auth", "account", "settings", ""],
+              "query": [{ "key": "email", "value": "{{test_email}}" }]
+            },
+            "description": "Caso negativo: current_password incorrecta, debe devolver 400 (UserService.update_account_settings valida con user.check_password)."
+          },
+          "response": []
+        },
+        {
+          "name": "09 - Patch passwords do not match (negative)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 400', function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "pm.test('Status is error', function () {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json.status).to.eql('error');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"current_password\": \"{{new_password}}\",\n  \"new_password\": \"{{new_password}}\",\n  \"confirm_password\": \"OtraPassword123\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/auth/account/settings/?email={{test_email}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "auth", "account", "settings", ""],
+              "query": [{ "key": "email", "value": "{{test_email}}" }]
+            },
+            "description": "Caso negativo: new_password y confirm_password no coinciden, debe devolver 400 (validado en AccountSettingsUpdateSerializer)."
+          },
+          "response": []
+        },
+        {
+          "name": "10 - Patch password incomplete (negative)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 400', function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "pm.test('Status is error', function () {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json.status).to.eql('error');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"current_password\": \"{{new_password}}\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/auth/account/settings/?email={{test_email}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "auth", "account", "settings", ""],
+              "query": [{ "key": "email", "value": "{{test_email}}" }]
+            },
+            "description": "Caso negativo: solo current_password sin new/confirm, debe devolver 400 desde AccountSettingsUpdateSerializer.validate (regla: los 3 campos juntos o ninguno)."
+          },
+          "response": []
+        },
+        {
+          "name": "11 - Patch new_password equal to current (negative)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 400', function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "pm.test('Error contains new_password', function () {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json.status).to.eql('error');",
+                  "    pm.expect(json.errors).to.have.property('new_password');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"current_password\": \"{{new_password}}\",\n  \"new_password\": \"{{new_password}}\",\n  \"confirm_password\": \"{{new_password}}\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/auth/account/settings/?email={{test_email}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "auth", "account", "settings", ""],
+              "query": [{ "key": "email", "value": "{{test_email}}" }]
+            },
+            "description": "Caso negativo: new_password igual a la actual (ya es new_password tras el request 07), debe devolver 400 (UserService.validate_new_password_is_different)."
+          },
+          "response": []
+        },
+        {
+          "name": "12 - Login with new password",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test('Status is success', function () {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json.status).to.eql('success');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{test_email}}\",\n  \"password\": \"{{new_password}}\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/auth/login/",
+              "host": ["{{base_url}}"],
+              "path": ["api", "auth", "login", ""]
+            },
+            "description": "Confirma login exitoso con la password cambiada en el request 07. Nota: la respuesta de /api/auth/login/ no incluye el objeto user (views.py), solo status/message."
+          },
+          "response": []
+        }
+      ]
     }
   ],
   "variable": [

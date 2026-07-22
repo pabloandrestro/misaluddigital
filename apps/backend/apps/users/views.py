@@ -13,6 +13,8 @@ from apps.users.serializers import (
     ProfileImageUploadSerializer,
     PasswordResetSerializer,
     PasswordResetConfirmSerializer,
+    AccountSettingsSerializer,
+    AccountSettingsUpdateSerializer,
 )
 
 
@@ -362,4 +364,73 @@ def profile_image(request):
             "status": "error",
             "message": "Ocurrio un error interno al procesar la imagen de perfil.",
             "error" : str(error),
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+# ---------------------------
+# configuracion de cuenta
+# ---------------------------
+@api_view(["GET","PATCH"])
+@permission_classes([AllowAny])
+def account_settings(request):
+    email = request.query_params.get("email") or request.data.get("email")
+    rut = request.query_params.get("rut") or request.data.get("rut")
+
+    if not email and not rut:
+        return Response({
+            "status": "error",
+            "message": "Debe enviar email o rut para buscar la cuenta."
+        }, status=status.HTTP_400_BAD_REQUEST)
+
+    try:
+        user = UserService.get_user_by_identifier(email=email, rut=rut)
+
+        if not UserService.validate_user_exists(user):
+            return Response({
+                "status": "error",
+                "message": "Usuario no encontrado."
+            }, status=status.HTTP_404_NOT_FOUND)
+
+        if request.method == "GET":
+            response_serializer = AccountSettingsSerializer(user)
+
+            return Response({
+                "status": "success",
+                "message": "Configuracion de cuenta obtenida correctamente.",
+                "account": response_serializer.data
+            }, status=status.HTTP_200_OK)
+
+        if request.method == "PATCH":
+            serializer = AccountSettingsUpdateSerializer(data=request.data, partial=True)
+
+            if not serializer.is_valid():
+                return Response({
+                    "status": "error",
+                    "message": "Datos invalidos.",
+                    "errors": serializer.errors
+                }, status=status.HTTP_400_BAD_REQUEST)
+
+            user = UserService.update_account_settings(
+                user=user,
+                data=serializer.validated_data,
+            )
+
+            response_serializer = AccountSettingsSerializer(user)
+
+            return Response({
+                "status": "success",
+                "message": "Configuracion de cuenta actualizada correctamente.",
+                "account": response_serializer.data
+            }, status=status.HTTP_200_OK)
+
+    except serializers.ValidationError as error:
+        return Response({
+            "status": "error",
+            "message": "No se pudo actualizar la configuracion de cuenta.",
+            "errors": error.detail
+        }, status=status.HTTP_400_BAD_REQUEST)
+
+    except Exception:
+        return Response({
+            "status": "error",
+            "message": "Ocurrio un error interno al procesar la configuracion de cuenta.",
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

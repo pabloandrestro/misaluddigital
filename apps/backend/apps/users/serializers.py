@@ -67,6 +67,48 @@ class UserSerializer(serializers.Serializer):
     name = serializers.CharField()
 
 
+class AccountSettingsSerializer(serializers.Serializer):
+    name = serializers.CharField()
+    email = serializers.EmailField()
+
+
+class AccountSettingsUpdateSerializer(serializers.Serializer):
+    name = serializers.CharField(required=False, max_length=60)
+    current_password = serializers.CharField(required=False, write_only=True)
+    new_password = serializers.CharField(required=False, write_only=True)
+    confirm_password = serializers.CharField(required=False, write_only=True)
+
+    def validate_name(self, value):
+        if not value or not value.strip():
+            raise serializers.ValidationError("El nombre no puede estar vacío.")
+        return value.strip()
+
+    def validate_new_password(self, value):
+        return UserValidator.validate_password_strength(value)
+
+    def validate_confirm_password(self, value):
+        return UserValidator.validate_password_strength(value)
+
+    def validate(self, attrs):
+        current_password = attrs.get("current_password")
+        new_password = attrs.get("new_password")
+        confirm_password = attrs.get("confirm_password")
+
+        password_fields = [current_password, new_password, confirm_password]
+
+        if any(password_fields) and not all(password_fields):
+            raise serializers.ValidationError({
+                "password": "Debe enviar current_password, new_password y confirm_password juntos."
+            })
+
+        if new_password and confirm_password and new_password != confirm_password:
+            raise serializers.ValidationError({
+                "confirm_password": "Las contraseñas no coinciden."
+            })
+
+        return attrs
+
+
 # Serializa un medicamento del campo JSON current_medications
 class MedicationSerializer(serializers.Serializer):
     id = serializers.UUIDField(required=False)

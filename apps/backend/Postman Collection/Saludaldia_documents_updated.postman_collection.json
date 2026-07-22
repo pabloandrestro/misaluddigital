@@ -680,6 +680,315 @@
           }
         }
       ]
+    },
+    {
+      "name": "Sharing",
+      "item": [
+        {
+          "name": "01 - Create share link valid",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 201', function () { pm.response.to.have.status(201); });",
+                  "pm.test('Share exists', function () {",
+                  "    const j = pm.response.json();",
+                  "    pm.expect(j.status).to.eql('success');",
+                  "    pm.expect(j).to.have.property('share');",
+                  "    pm.expect(j.share.token).to.be.a('string');",
+                  "});",
+                  "const j = pm.response.json();",
+                  "if (j.share && j.share.token) { pm.collectionVariables.set('share_token', j.share.token); }"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"professional_name\": \"Dr. Juan Perez\",\n  \"professional_rut\": \"12345678-5\",\n  \"document_ids\": [\"{{document_id}}\"],\n  \"expires_in_hours\": 24\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/sharing/?email={{test_email}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "sharing", ""],
+              "query": [{ "key": "email", "value": "{{test_email}}" }]
+            }
+          }
+        },
+        {
+          "name": "02 - Create share link without expires_in_hours (default 24)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 201', function () { pm.response.to.have.status(201); });",
+                  "pm.test('Share exists with expires_at', function () {",
+                  "    const j = pm.response.json();",
+                  "    pm.expect(j.status).to.eql('success');",
+                  "    pm.expect(j.share).to.have.property('expires_at');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"professional_name\": \"Dr. Juan Perez\",\n  \"professional_rut\": \"12345678-5\",\n  \"document_ids\": [\"{{document_id}}\"]\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/sharing/?email={{test_email}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "sharing", ""],
+              "query": [{ "key": "email", "value": "{{test_email}}" }]
+            },
+            "description": "Sin expires_in_hours: el serializer usa default=24 (ShareDocumentSerializer)."
+          }
+        },
+        {
+          "name": "03 - Create share link without email/rut (negative)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 400', function () { pm.response.to.have.status(400); });",
+                  "pm.test('Status is error', function () { pm.expect(pm.response.json().status).to.eql('error'); });"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"professional_name\": \"Dr. Juan Perez\",\n  \"professional_rut\": \"12345678-5\",\n  \"document_ids\": [\"{{document_id}}\"]\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/sharing/",
+              "host": ["{{base_url}}"],
+              "path": ["api", "sharing", ""]
+            },
+            "description": "Caso negativo: sin email ni rut en query params, debe devolver 400 (ShareDocumentService.create_share_link)."
+          }
+        },
+        {
+          "name": "04 - Create share link document_ids empty (negative)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 400', function () { pm.response.to.have.status(400); });",
+                  "pm.test('Status is error', function () { pm.expect(pm.response.json().status).to.eql('error'); });"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"professional_name\": \"Dr. Juan Perez\",\n  \"professional_rut\": \"12345678-5\",\n  \"document_ids\": []\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/sharing/?email={{test_email}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "sharing", ""],
+              "query": [{ "key": "email", "value": "{{test_email}}" }]
+            },
+            "description": "Caso negativo: document_ids vacio, rechazado por ShareDocumentSerializer (min_length=1) antes de llegar al service."
+          }
+        },
+        {
+          "name": "05 - Create share link invalid professional_rut (negative)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 400', function () { pm.response.to.have.status(400); });",
+                  "pm.test('Status is error', function () { pm.expect(pm.response.json().status).to.eql('error'); });"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"professional_name\": \"Dr. Juan Perez\",\n  \"professional_rut\": \"11111111-1\",\n  \"document_ids\": [\"{{document_id}}\"]\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/sharing/?email={{test_email}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "sharing", ""],
+              "query": [{ "key": "email", "value": "{{test_email}}" }]
+            },
+            "description": "Caso negativo: professional_rut con digito verificador invalido, rechazado por UserValidator.validate_rut_format."
+          }
+        },
+        {
+          "name": "06 - Create share link deleted document (negative)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 400', function () { pm.response.to.have.status(400); });",
+                  "pm.test('Status is error', function () { pm.expect(pm.response.json().status).to.eql('error'); });"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"professional_name\": \"Dr. Juan Perez\",\n  \"professional_rut\": \"12345678-5\",\n  \"document_ids\": [\"{{deleted_document_id}}\"]\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/sharing/?email={{test_email}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "sharing", ""],
+              "query": [{ "key": "email", "value": "{{test_email}}" }]
+            },
+            "description": "Caso negativo: documento con deleted_at != null, rechazado por ShareDocumentService.create_share_link. Requiere setear deleted_document_id manualmente."
+          }
+        },
+        {
+          "name": "07 - Create share link document of another user (negative)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 400', function () { pm.response.to.have.status(400); });",
+                  "pm.test('Status is error', function () { pm.expect(pm.response.json().status).to.eql('error'); });"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"professional_name\": \"Dr. Juan Perez\",\n  \"professional_rut\": \"12345678-5\",\n  \"document_ids\": [\"{{other_user_document_id}}\"]\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/sharing/?email={{test_email}}",
+              "host": ["{{base_url}}"],
+              "path": ["api", "sharing", ""],
+              "query": [{ "key": "email", "value": "{{test_email}}" }]
+            },
+            "description": "Caso negativo: documento pertenece a otro usuario (doc.user_id != user.id), rechazado por ShareDocumentService. Requiere setear other_user_document_id manualmente."
+          }
+        },
+        {
+          "name": "08 - Get share link valid token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', function () { pm.response.to.have.status(200); });",
+                  "pm.test('Share exists', function () {",
+                  "    const j = pm.response.json();",
+                  "    pm.expect(j.status).to.eql('success');",
+                  "    pm.expect(j).to.have.property('share');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/sharing/{{share_token}}/",
+              "host": ["{{base_url}}"],
+              "path": ["api", "sharing", "{{share_token}}", ""]
+            }
+          }
+        },
+        {
+          "name": "09 - Get share link nonexistent token (negative)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 404', function () { pm.response.to.have.status(404); });",
+                  "pm.test('Status is error', function () { pm.expect(pm.response.json().status).to.eql('error'); });"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/sharing/token_falso/",
+              "host": ["{{base_url}}"],
+              "path": ["api", "sharing", "token_falso", ""]
+            },
+            "description": "Caso negativo: token no existe en TemporaryAccessLinkRepository, debe devolver 404."
+          }
+        },
+        {
+          "name": "10 - Get share link expired token (negative)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 400', function () { pm.response.to.have.status(400); });",
+                  "pm.test('Status is error', function () { pm.expect(pm.response.json().status).to.eql('error'); });"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/sharing/{{expired_share_token}}/",
+              "host": ["{{base_url}}"],
+              "path": ["api", "sharing", "{{expired_share_token}}", ""]
+            },
+            "description": "Caso negativo: link.expires_at < now, debe devolver 400 (no 404). Requiere setear expired_share_token manualmente con un link ya vencido."
+          }
+        }
+      ]
     }
   ],
   "variable": [
@@ -710,6 +1019,22 @@
     {
       "key": "category_id_certificados",
       "value": "544042d5-f2e5-4a1d-9b13-843be674b55a"
+    },
+    {
+      "key": "share_token",
+      "value": ""
+    },
+    {
+      "key": "expired_share_token",
+      "value": ""
+    },
+    {
+      "key": "deleted_document_id",
+      "value": ""
+    },
+    {
+      "key": "other_user_document_id",
+      "value": ""
     }
   ]
 }

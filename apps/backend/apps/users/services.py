@@ -124,6 +124,36 @@ class UserService:
         return MedicalProfileRepository.update_fields(profile, data)
 
     @staticmethod
+    def update_account_settings(user, data):
+        UserService.validate_user_instance(user)
+        UserService.validate_profile_data(data)
+
+        if not data:
+            return user
+
+        if "name" in data:
+            user.name = data["name"]
+
+        current_password = data.get("current_password")
+        new_password = data.get("new_password")
+        confirm_password = data.get("confirm_password")
+
+        if current_password and new_password and confirm_password:
+            if not user.check_password(current_password):
+                raise serializers.ValidationError({
+                    "current_password": "La contraseña actual no es correcta."
+                })
+
+            if not UserService.validate_new_password_is_different(user, new_password):
+                raise serializers.ValidationError({
+                    "new_password": "La nueva contraseña no puede ser igual a la actual."
+                })
+
+            user.set_password(new_password)
+
+        return UserRepository.save_user(user)
+
+    @staticmethod
     def update_profile_image_metadata(user, profile_image_bucket, profile_image_key, profile_image_url=""):
         UserService.validate_user_instance(user)
         UserService.validate_text_payload(profile_image_bucket, "profile_image_bucket")
