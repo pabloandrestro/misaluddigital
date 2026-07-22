@@ -187,12 +187,11 @@ export default function EditProfileModal({ profile, onClose, onSuccess }: Props)
       const cleanedHistory = form.recent_medical_history.filter(
         (h) => h.title && h.title.trim() !== ""
       );
-      await api.patch(`/auth/profile/`, {
+      await api.patch(`/auth/profile/?email=${user?.email}`, {
         ...form,
         current_medications: cleanedMedications,
         recent_medical_history: cleanedHistory,
         relevance_type: form.relevance_type,
-        email: user?.email,
       });
       onSuccess({ ...form, current_medications: cleanedMedications, recent_medical_history: cleanedHistory });
       onClose();
