@@ -64,33 +64,70 @@ const INITIAL_NOTIFICATIONS: NotificationRow[] = [
 
 export default function ConfiguracionPage() {
   const user = useAuthStore((s) => s.user);
+  const setUser = useAuthStore((s) => s.setUser); // ajusta el nombre si tu store usa otro (ej. updateUser)
   const [activeTab, setActiveTab] = useState<TabId>("cuenta");
 
   // --- Cuenta ---
   const [name, setName] = useState(user?.name ?? "");
   const [email, setEmail] = useState(user?.email ?? "");
-  const [sendingReset, setSendingReset] = useState(false);
-  const [resetSent, setResetSent] = useState(false);
 
-  // TODO backend: no existe endpoint para actualizar nombre/email del usuario todavia.
-  // Este boton queda listo en la UI pero avisa que la funcion esta pendiente.
-  const handleSaveAccount = () => {
-    alert("Esta función estará disponible cuando el backend tenga el endpoint de actualización de cuenta.");
+  // --- Cambio de contraseña (in-page) ---
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [passwordErrors, setPasswordErrors] = useState<Record<string, string>>({});
+  const [changingPassword, setChangingPassword] = useState(false);
+  const [passwordSuccess, setPasswordSuccess] = useState(false);
+
+  const handleSaveAccount = async () => {
+    if (!name.trim()) {
+      alert("El nombre no puede estar vacío.");
+      return;
+    }
+    try {
+      await api.patch(`/auth/account/settings/?email=${user?.email}`, { name });
+      setUser({ ...user!, name });
+      alert("Nombre actualizado correctamente.");
+    } catch (err: any) {
+      alert(err?.response?.data?.message ?? "Error al actualizar el nombre.");
+    }
   };
 
-  // Esta si es una accion real: reutiliza el flujo de recuperacion de contraseña por correo
+  // Cambio de contraseña in-page: current_password + new_password + confirm_password
   const handleChangePassword = async () => {
-    if (!user?.email) return;
-    setSendingReset(true);
-    setResetSent(false);
+    setPasswordErrors({});
+    setPasswordSuccess(false);
+
+    if (!currentPassword || !newPassword || !confirmPassword) {
+      setPasswordErrors({ general: "Completa los tres campos para cambiar la contraseña." });
+      return;
+    }
+
+    setChangingPassword(true);
     try {
-      await api.post("/auth/password-reset/request/", { email: user.email });
-      setResetSent(true);
-    } catch (err) {
-      console.error("Error al solicitar cambio de contraseña:", err);
-      alert("No se pudo enviar el correo de cambio de contraseña.");
+      await api.patch(`/auth/account/settings/?email=${user?.email}`, {
+        current_password: currentPassword,
+        new_password: newPassword,
+        confirm_password: confirmPassword,
+      });
+      setPasswordSuccess(true);
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+    } catch (err: any) {
+      const errors = err?.response?.data?.errors;
+      if (errors && typeof errors === "object") {
+        // el backend devuelve errores por campo: current_password, new_password, confirm_password
+        const flat: Record<string, string> = {};
+        Object.entries(errors).forEach(([key, val]) => {
+          flat[key] = Array.isArray(val) ? val[0] : String(val);
+        });
+        setPasswordErrors(flat);
+      } else {
+        setPasswordErrors({ general: err?.response?.data?.message ?? "No se pudo cambiar la contraseña." });
+      }
     } finally {
-      setSendingReset(false);
+      setChangingPassword(false);
     }
   };
 
@@ -98,7 +135,7 @@ export default function ConfiguracionPage() {
   const handleConfigure2FA = () => {
     alert("La autenticación de dos pasos aún no está disponible.");
   };
-  const handleCloseSession = (id: number) => {
+  const handleCloseSession = (_id: number) => {
     alert("Cerrar sesiones remotas aún no está disponible (requiere backend).");
   };
 
@@ -190,20 +227,65 @@ export default function ConfiguracionPage() {
                 </div>
               </div>
 
-              <div className="border border-dashed border-gray-200 rounded-lg p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
-                <div>
-                  <p className="text-sm font-medium text-gray-900">Contraseña</p>
-                  <p className="text-xs text-gray-400">
-                    {resetSent
-                      ? "Correo enviado, revisa tu bandeja de entrada."
-                      : "Cámbiala enviando un enlace a tu correo."}
-                  </p>
+              {/* Cambio de contraseña in-page */}
+              <div className="border border-gray-200 rounded-lg p-4 mb-6">
+                <p className="text-sm font-medium text-gray-900 mb-1">Contraseña</p>
+                <p className="text-xs text-gray-400 mb-4">Ingresa tu contraseña actual y la nueva contraseña.</p>
+
+                <div className="grid grid-cols-1 gap-3 mb-3">
+                  <div>
+                    <label className="block text-xs font-medium text-gray-500 uppercase mb-1">Contraseña actual</label>
+                    <input
+                      type="password"
+                      value={currentPassword}
+                      onChange={(e) => setCurrentPassword(e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-primary-mid"
+                    />
+                    {passwordErrors.current_password && (
+                      <p className="text-xs text-red-500 mt-1">{passwordErrors.current_password}</p>
+                    )}
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-medium text-gray-500 uppercase mb-1">Nueva contraseña</label>
+                      <input
+                        type="password"
+                        value={newPassword}
+                        onChange={(e) => setNewPassword(e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-primary-mid"
+                      />
+                      {passwordErrors.new_password && (
+                        <p className="text-xs text-red-500 mt-1">{passwordErrors.new_password}</p>
+                      )}
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-500 uppercase mb-1">Confirmar contraseña</label>
+                      <input
+                        type="password"
+                        value={confirmPassword}
+                        onChange={(e) => setConfirmPassword(e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-primary-mid"
+                      />
+                      {passwordErrors.confirm_password && (
+                        <p className="text-xs text-red-500 mt-1">{passwordErrors.confirm_password}</p>
+                      )}
+                    </div>
+                  </div>
                 </div>
+
+                {passwordErrors.general && (
+                  <p className="text-xs text-red-500 mb-3">{passwordErrors.general}</p>
+                )}
+                {passwordSuccess && (
+                  <p className="text-xs text-green-600 mb-3">Contraseña actualizada correctamente.</p>
+                )}
+
                 <button
                   onClick={handleChangePassword}
-                  disabled={sendingReset}
-                  className="px-4 py-2 rounded-full border border-primary-mid text-primary-mid text-sm hover:bg-primary-light transition-colors disabled:opacity-60 flex-shrink-0">
-                  {sendingReset ? "Enviando..." : "Cambiar Contraseña"}
+                  disabled={changingPassword}
+                  className="px-4 py-2 rounded-full border border-primary-mid text-primary-mid text-sm hover:bg-primary-light transition-colors disabled:opacity-60">
+                  {changingPassword ? "Cambiando..." : "Cambiar Contraseña"}
                 </button>
               </div>
 
