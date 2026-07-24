@@ -17,6 +17,34 @@ from apps.users.serializers import (
     AccountSettingsUpdateSerializer,
 )
 
+class UserResolver:
+
+    # resuelve y valida usuario por email o rut desde query_params o data
+    @staticmethod
+    def resolve_user(request, message_if_missing):
+        email = request.query_params.get("email") or request.data.get("email")
+        rut = request.query_params.get("rut") or request.data.get("rut")
+
+        if not email and not rut:
+            return None, Response({
+                "status": "error",
+                "message": message_if_missing
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            user = UserService.get_user_by_identifier(email=email, rut=rut)
+            if not UserService.validate_user_exists(user):
+                return None, Response({
+                    "status": "error",
+                    "message": "Usuario no encontrado."
+                }, status=status.HTTP_404_NOT_FOUND)
+            return user, None
+        except Exception:
+            return None, Response({
+                "status": "error",
+                "message": "Usuario no encontrado."
+            }, status=status.HTTP_404_NOT_FOUND)
+
 
 # --------------------------
 # parte del Auth
@@ -108,25 +136,14 @@ def login(request):
 @api_view(["GET","PATCH"])
 @permission_classes([AllowAny])
 def medical_profile(request):
-    email = request.query_params.get('email') or request.data.get('email')
-    rut = request.query_params.get('rut') or request.data.get('rut')
-
-    if not email and not rut: # fix, si el email y el rut
-        return Response({
-            "status" : "error",
-            "message" : "Debe enviar email o rut para buscar el perfil medico."
-        }, status=status.HTTP_400_BAD_REQUEST)
+    user, error_response = UserResolver.resolve_user(
+        request,
+        message_if_missing="Debe enviar email o rut para buscar el perfil medico."
+    )
+    if error_response:
+        return error_response
 
     try:
-        user = UserService.get_user_by_identifier(
-            email=email,
-            rut=rut,)
-
-        if not UserService.validate_user_exists(user):
-            return Response({
-                "status": "error",
-                "message": "Usuario no encontrado."
-            }, status=status.HTTP_404_NOT_FOUND)
 
         if request.method == "GET":
             profile = UserService.get_medical_profile(user)
@@ -254,23 +271,14 @@ def password_reset_confirm(request):
 @api_view(["GET"])
 @permission_classes([AllowAny])
 def me(request):
-    email = request.query_params.get("email")
-    rut = request.query_params.get("rut")
-
-    if not email and not rut:
-        return Response({
-            "status": "error",
-            "message": "Debe de enviar email o rut para buscar el usuario.",
-        }, status=status.HTTP_400_BAD_REQUEST)
+    user, error_response = UserResolver.resolve_user(
+        request,
+        message_if_missing="Debe de enviar email o rut para buscar el usuario."
+    )
+    if error_response:
+        return error_response
 
     try: # seteamos el valor de none en ambos , al valor propio que nos da el request params
-        user = UserService.get_user_by_identifier(email=email, rut=rut)
-
-        if not UserService.validate_user_exists(user):
-            return Response({
-                "status": "error",
-                "message" : "Usuario no encontrado.",
-            }, status=status.HTTP_404_NOT_FOUND)
 
         response_serializer = UserSerializer(user)
 
@@ -289,26 +297,14 @@ def me(request):
 @api_view(["GET","POST","DELETE"])
 @permission_classes([AllowAny])
 def profile_image(request):
-    email = request.query_params.get("email") or request.data.get("email")
-    rut = request.query_params.get("rut") or request.data.get("rut")
-
-    if not email and not rut:
-        return Response({
-            "status": "error",
-            "message" : "Debe de enviar email o rut para buscar el usuario.",
-        }, status=status.HTTP_400_BAD_REQUEST)
+    user, error_response = UserResolver.resolve_user(
+        request,
+        message_if_missing="Debe de enviar email o rut para buscar el usuario."
+    )
+    if error_response:
+        return error_response
 
     try:
-        user = UserService.get_user_by_identifier(
-            email=email,
-            rut=rut,
-        )
-
-        if not UserService.validate_user_exists(user):
-            return Response({
-                "status": "error",
-                "message": "Usuario no encontrado."
-            }, status=status.HTTP_404_NOT_FOUND)
 
         if request.method == "GET":
             image = UserService.get_profile_image_metadata(user)
@@ -372,23 +368,14 @@ def profile_image(request):
 @api_view(["GET","PATCH"])
 @permission_classes([AllowAny])
 def account_settings(request):
-    email = request.query_params.get("email") or request.data.get("email")
-    rut = request.query_params.get("rut") or request.data.get("rut")
-
-    if not email and not rut:
-        return Response({
-            "status": "error",
-            "message": "Debe enviar email o rut para buscar la cuenta."
-        }, status=status.HTTP_400_BAD_REQUEST)
+    user, error_response = UserResolver.resolve_user(
+        request,
+        message_if_missing="Debe enviar email o rut para buscar la cuenta."
+    )
+    if error_response:
+        return error_response
 
     try:
-        user = UserService.get_user_by_identifier(email=email, rut=rut)
-
-        if not UserService.validate_user_exists(user):
-            return Response({
-                "status": "error",
-                "message": "Usuario no encontrado."
-            }, status=status.HTTP_404_NOT_FOUND)
 
         if request.method == "GET":
             response_serializer = AccountSettingsSerializer(user)
