@@ -1,6 +1,44 @@
-# 🐾 PetDoc Backend — Django + Supabase/PostgreSQL
+# 🩺 SaludAlDía Backend — Django + Supabase/PostgreSQL
 
-Backend del sistema **PetDoc / SaludAlDía**, construido con **Django** y conectado a una base de datos **PostgreSQL** gestionada en **Supabase**.
+Backend del sistema **SaludAlDía**, construido con **Django** y conectado a una base de datos **PostgreSQL** gestionada en **Supabase**. Este documento describe el estado real del backend en la rama actual.
+
+---
+
+## 🔐 Estado de autenticación actual
+
+Esta generación del MVP **funciona sin JWT**. Los usuarios se identifican pasando su identidad como parámetro de consulta en cada request:
+
+```
+?email=usuario@ejemplo.com
+```
+o
+```
+?rut=12345678-9
+```
+
+Actualmente **no se utiliza**:
+
+- `request.user`
+- Encabezado `Authorization: Bearer ...`
+- Access tokens
+- Refresh tokens
+
+Cada endpoint resuelve el usuario manualmente en el backend (`UserService.get_user_by_identifier`) a partir del email o rut recibido, sin sesión ni token de por medio.
+
+> **JWT y autenticación mediante tokens quedan planificados como funcionalidad futura — próxima generación.** Ver sección [Trabajo futuro](#-trabajo-futuro).
+
+---
+
+## 🛠️ Stack tecnológico
+
+- **Python 3.12**
+- **Django 5.1**
+- **Django REST Framework**
+- **PostgreSQL** (Supabase)
+- **Supabase Storage** (documentos médicos e imágenes de perfil)
+- **Postman** para pruebas manuales de la API
+
+`djangorestframework-simplejwt` está instalado en el proyecto pero **no forma parte del flujo activo actual** — ver [Trabajo futuro](#-trabajo-futuro).
 
 ---
 
@@ -9,390 +47,81 @@ Backend del sistema **PetDoc / SaludAlDía**, construido con **Django** y conect
 ```txt
 apps/backend/
 ├── manage.py
-├── .env                    ← archivo local con credenciales reales, no se sube al repo
-├── .env.example            ← plantilla de variables de entorno
 ├── requirements.txt
-├── scripts/
-│   └── test_db_queries.py  ← prueba de conexión y consultas SQL simples
-├── database/
-│   └── schema.sql          ← tablas administradas manualmente en Supabase
-└── ...
+├── schema.sql                 ← tablas administradas manualmente en Supabase
+├── test_db_queries.py         ← script de verificación manual de modelos/consultas
+├── .env.example                ← plantilla de variables de entorno
+├── Postman Collection/
+│   ├── Saludaldia_corregida.postman_collection.json
+│   └── Saludaldia_documents_updated.postman_collection.json
+├── saludaldia/                ← settings, urls raíz, wsgi
+└── apps/
+    ├── users/          ← funcional: auth, perfil médico, imagen, account settings
+    ├── documents/      ← funcional: documentos médicos, categorías, storage
+    ├── sharing/        ← funcional: links temporales de documentos
+    ├── health_centers/ ← stub (modelo listo, vista placeholder, sin lógica de negocio)
+    ├── ai_analysis/    ← stub (modelo listo, vista placeholder, sin lógica de negocio)
+    ├── pets/           ← en desarrollo (modelo aún vacío, sin tabla migrada)
+    └── audit/          ← instalada en el proyecto, sin rutas registradas todavía
 ```
 
 ---
 
-## 🗄️ Base de datos y archivo SQL
+## 🗄️ Base de datos
 
-El proyecto usa **Supabase PostgreSQL**. Algunas tablas son creadas por Django mediante migraciones y otras se crean manualmente usando el archivo:
+El proyecto usa **Supabase PostgreSQL**. Algunas tablas son creadas por Django mediante migraciones y otras se crean manualmente con `schema.sql`:
 
-```txt
-database/schema.sql
-```
+- **Administradas por Django** (`python manage.py migrate`): `users`, `medical_profiles`.
+- **Administradas manualmente vía `schema.sql`**: `document_categories`, `documents`, `health_centers`, `audit_logs`, `temporary_access_links`, `ai_recommendations`.
 
-Este archivo contiene las tablas que **no son administradas por Django** mediante migraciones. Se debe ejecutar manualmente en Supabase cuando se configure el proyecto por primera vez o cuando se necesite recrear la base de datos.
-
-### Tablas incluidas en `database/schema.sql`
-
-| Tabla | Descripción |
-|---|---|
-| `document_categories` | Categorías de documentos médicos |
-| `documents` | Documentos subidos por usuarios |
-| `health_centers` | Centros veterinarios / de salud |
-| `audit_logs` | Registro de auditoría de acciones |
-| `temporary_access_links` | Links de acceso temporal compartido |
-| `ai_recommendations` | Recomendaciones generadas por IA |
-
-Estas tablas tienen modelos en Django para poder consultarlas desde el ORM, pero sus modelos usan:
-
-```python
-class Meta:
-    managed = False
-```
-
-Esto significa que Django puede leerlas y usarlas, pero **no las crea ni modifica** con migraciones.
-
-### Tablas administradas por Django
-
-Las siguientes tablas son creadas por Django mediante:
-
-```powershell
-python manage.py migrate
-```
-
-| Tabla |
-|---|
-| `users` |
-| `medical_profiles` |
-| `pets` |
-
-Además, Django crea tablas internas para autenticación, permisos, sesiones, admin y migraciones, como:
-
-```txt
-django_migrations
-django_content_type
-django_session
-auth_group
-auth_permission
-auth_group_permissions
-users_groups
-users_user_permissions
-django_admin_log
-```
-
-Estas tablas no deben incluirse en `database/schema.sql`.
+Estas últimas tienen modelos Django con `managed = False`: Django puede leerlas y consultarlas por ORM, pero no las crea ni modifica con migraciones. `schema.sql` debe ejecutarse manualmente en Supabase al configurar el proyecto por primera vez.
 
 ---
 
-## ⚙️ Cómo arrancar el proyecto en Windows — PowerShell
+## ⚙️ Instalación y ejecución local
 
-### 1. Entrar a la carpeta del backend
-
-```powershell
-cd ruta\del\proyecto\apps\backend
-```
-
-### 2. Crear entorno virtual con Python 3.12
+### Windows — PowerShell
 
 ```powershell
+cd apps\backend
 py -3.12 -m venv .venv
-```
-
-### 3. Permitir scripts en la sesión actual
-
-```powershell
 Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
-```
-
-### 4. Activar entorno virtual
-
-```powershell
 .\.venv\Scripts\Activate.ps1
-```
-
-El prompt debería quedar con `(.venv)` al inicio.
-
-### 5. Instalar dependencias
-
-```powershell
 python -m pip install --upgrade pip setuptools wheel
 pip install -r requirements.txt
-```
-
-### 6. Configurar variables de entorno
-
-El proyecto incluye `.env.example` como plantilla. Para crear el archivo real:
-
-```powershell
 Copy-Item .env.example .env
 ```
 
-Luego se debe editar `.env` con los datos reales de Supabase/PostgreSQL y las claves necesarias.
-
-El archivo `.env` contiene credenciales reales, por lo que **no debe subirse al repositorio**.
-
-### 7. Ejecutar migraciones de Django
+Editar `.env` con los datos reales de Supabase/PostgreSQL antes de continuar.
 
 ```powershell
 python manage.py migrate
-```
-
-Esto crea o actualiza solo las tablas administradas por Django.
-
-### 8. Verificar configuración
-
-```powershell
 python manage.py check
+python manage.py runserver 8000
 ```
 
-### 9. Levantar servidor de desarrollo
+### Linux / macOS
 
-```powershell
-python manage.py runserver
+Los mismos pasos, con la sintaxis habitual de shell:
+
+```bash
+cd apps/backend
+python3.12 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+cp .env.example .env
+python manage.py migrate
+python manage.py check
+python manage.py runserver 8000
 ```
 
-Salida esperada:
-
-```txt
-Watching for file changes with StatReloader
-Performing system checks...
-
-System check identified no issues (0 silenced).
-Django version 5.1, using settings 'saludaldia.settings'
-Starting development server at http://127.0.0.1:8000/
-Quit the server with CTRL-BREAK.
-```
-
-Cuando aparece esa salida, el servidor está funcionando correctamente y queda esperando peticiones. No es un error que la terminal quede ocupada.
-
-El backend queda disponible en:
-
-```txt
-http://127.0.0.1:8000/
-```
+El backend queda disponible en `http://127.0.0.1:8000/`.
 
 ---
 
-## 🔌 Conexión a Supabase PostgreSQL
+## 🔑 Variables de entorno
 
-Supabase entrega distintos tipos de conexión. En algunos equipos o redes, la conexión directa puede intentar usar IPv6 y quedarse esperando respuesta.
-
-Ejemplo de conexión directa:
-
-```txt
-db.<project-ref>.supabase.co:5432
-```
-
-Si al ejecutar `migrate` aparece un error como:
-
-```txt
-connection timed out
-```
-
-o `Test-NetConnection` queda esperando respuesta, se recomienda usar el **Connection Pooler / Supavisor** de Supabase.
-
-Ejemplo de configuración usando pooler:
-
-```python
-DATABASES = {"default": {
-    "ENGINE": "django.db.backends.postgresql",
-    "NAME": os.getenv("DB_NAME", "postgres"),
-    "USER": os.getenv("DB_USER", "postgres.<project-ref>"),
-    "PASSWORD": os.getenv("DB_PASSWORD", "tu_password"),
-    "HOST": os.getenv("DB_HOST", "aws-1-us-west-2.pooler.supabase.com"),
-    "PORT": os.getenv("DB_PORT", "5432"),
-    "OPTIONS": {
-        "sslmode": "require",
-    },
-}}
-```
-
-Para probar si el puerto responde:
-
-```powershell
-Test-NetConnection aws-1-us-west-2.pooler.supabase.com -Port 5432
-```
-
-Si aparece:
-
-```txt
-TcpTestSucceeded : True
-```
-
-la conexión por red está funcionando.
-
----
-
-## 🔌 Prueba de conexión a la base de datos
-
-El proyecto incluye:
-
-```txt
-scripts/test_db_queries.py
-```
-
-Este archivo valida que Django pueda conectarse a Supabase/PostgreSQL y consultar las tablas principales. Ejecuta consultas simples tipo:
-
-```sql
-SELECT * FROM public."tabla" LIMIT 5;
-```
-
-Se ejecuta desde la carpeta `apps/backend` con:
-
-```powershell
-python manage.py shell < scripts/test_db_queries.py
-```
-
-Este script confirma que las tablas existen y que la conexión funciona, aunque estén vacías.
-
-Si aparece algo como:
-
-```txt
-consulta exitosa: la tabla existe, pero no tiene registros.
-```
-
-significa que la tabla existe y Django pudo consultarla correctamente.
-
----
-
-## 🧪 Prueba rápida de modelos `managed = False`
-
-Las tablas con `managed = False` deben coincidir con el `schema.sql`. Si un campo del modelo tiene un typo, el error aparece al usar el ORM.
-
-Para revisar los problemas típicos detectados en los modelos, se puede entrar al shell:
-
-```powershell
-python manage.py shell
-```
-
-Y ejecutar:
-
-```python
-exec("""
-from uuid import uuid4
-from django.core.exceptions import FieldDoesNotExist
-from apps.documents.models import Document, DocumentCategory
-from apps.health_centers.models import HealthCenter
-from apps.sharing.models import TemporaryAccessLink
-
-errors = []
-
-def ok(msg):
-    print("[OK]", msg)
-
-def fail(msg):
-    print("[ERROR]", msg)
-    errors.append(msg)
-
-def field_exists(model, field):
-    try:
-        model._meta.get_field(field)
-        ok(f"{model.__name__}.{field} existe")
-    except FieldDoesNotExist:
-        fail(f"{model.__name__}.{field} NO existe")
-
-def field_not_exists(model, field):
-    try:
-        model._meta.get_field(field)
-        fail(f"{model.__name__}.{field} existe, pero no deberia existir")
-    except FieldDoesNotExist:
-        ok(f"{model.__name__}.{field} no existe, correcto")
-
-print("\n=== TEST DE CAMPOS CORREGIDOS ===")
-
-field_exists(Document, "title")
-field_not_exists(Document, "tittle")
-
-field_exists(Document, "ai_metadata")
-field_not_exists(Document, "ai_metada")
-
-field_exists(Document, "issuing_institution")
-field_exists(Document, "issuing_professional")
-field_not_exists(Document, "issuing_profesional")
-
-field_exists(HealthCenter, "name")
-field_exists(TemporaryAccessLink, "expires_at")
-
-print("\n=== TEST DE __str__ ===")
-
-for model in [DocumentCategory, Document, HealthCenter, TemporaryAccessLink]:
-    if "__str__" in model.__dict__:
-        ok(f"{model.__name__} tiene __str__ definido en la clase")
-    else:
-        fail(f"{model.__name__} NO tiene __str__ definido en la clase")
-
-try:
-    print(str(DocumentCategory(name="categoria prueba", slug="categoria-prueba")))
-    ok("DocumentCategory.__str__ funciona")
-except Exception as e:
-    fail(f"DocumentCategory.__str__ fallo: {e}")
-
-try:
-    print(str(Document(id=uuid4(), user_id=uuid4(), title="documento prueba", doc_type="other", file_key="test.pdf")))
-    ok("Document.__str__ funciona")
-except Exception as e:
-    fail(f"Document.__str__ fallo: {e}")
-
-try:
-    print(str(HealthCenter(id=uuid4(), name="centro prueba", center_type="cesfam")))
-    ok("HealthCenter.__str__ funciona")
-except Exception as e:
-    fail(f"HealthCenter.__str__ fallo: {e}")
-
-try:
-    print(str(TemporaryAccessLink(id=uuid4(), user_id=uuid4(), token="token-prueba")))
-    ok("TemporaryAccessLink.__str__ funciona")
-except Exception as e:
-    fail(f"TemporaryAccessLink.__str__ fallo: {e}")
-
-print("\n=== TEST ORM REAL ===")
-
-for model in [DocumentCategory, Document, HealthCenter, TemporaryAccessLink]:
-    try:
-        result = model.objects.values().first()
-        ok(f"{model.__name__}.objects.values().first() funciona")
-        print(result)
-    except Exception as e:
-        fail(f"{model.__name__} fallo en ORM: {e}")
-
-print("\n=== RESULTADO FINAL ===")
-
-if errors:
-    print(f"hay {len(errors)} error(es):")
-    for error in errors:
-        print("-", error)
-else:
-    print("todo ok: los errores reportados ya no aparecen")
-""")
-```
-
-Este test revisa que no existan los errores de campos mal escritos como:
-
-```txt
-tittle
-ai_metada
-issuing_profesional
-```
-
-y valida que existan los campos reales:
-
-```txt
-title
-ai_metadata
-issuing_institution
-issuing_professional
-name
-expires_at
-```
-
-También prueba que `__str__` esté definido correctamente y que el ORM pueda ejecutar:
-
-```python
-model.objects.values().first()
-```
-
----
-
-## 🔑 Variables de entorno principales
+Variables definidas en `.env.example`:
 
 | Variable | Descripción |
 |---|---|
@@ -404,19 +133,114 @@ model.objects.values().first()
 | `DB_PASSWORD` | Password de PostgreSQL |
 | `DB_HOST` | Host de PostgreSQL o pooler de Supabase |
 | `DB_PORT` | Puerto de PostgreSQL |
+| `JWT_ACCESS_TOKEN_LIFETIME_MINUTES` | Reservada para JWT — funcionalidad futura, no usada por el flujo actual |
+| `JWT_REFRESH_TOKEN_LIFETIME_DAYS` | Reservada para JWT — funcionalidad futura, no usada por el flujo actual |
 | `SUPABASE_URL` | URL del proyecto Supabase |
 | `SUPABASE_SERVICE_KEY` | Service role key para operaciones backend |
-| `SUPABASE_BUCKET` | Bucket usado para archivos médicos |
-| `FRONTEND_URL` | URL del frontend para CORS |
+| `SUPABASE_BUCKET` | Bucket por defecto configurado para archivos médicos |
+| `ANTHROPIC_API_KEY` | Reservada para el módulo de IA (`ai_analysis`), todavía no implementado |
+| `FRONTEND_URL` | URL del frontend, usada para CORS y para construir los links de compartir |
+| `EMAIL_HOST` / `EMAIL_PORT` / `EMAIL_HOST_USER` / `EMAIL_HOST_PASSWORD` | Configuración de SMTP; el envío real de emails todavía no está implementado en el código |
+
+**Importante:**
+
+- `.env` contiene credenciales reales y **no debe subirse al repositorio**.
+- Las claves de Supabase (`SUPABASE_SERVICE_KEY`) deben permanecer exclusivamente en el backend.
+- Ninguna credencial de Supabase debe colocarse en el frontend.
 
 ---
 
-## 🛠️ Tecnologías principales
+## ✅ Funcionalidades actuales
 
-- **Python 3.12**
-- **Django 5.1**
-- **Django REST Framework**
-- **PostgreSQL**
-- **Supabase**
-- **psycopg2**
-- **SimpleJWT**
+Implementadas y probadas manualmente vía Postman:
+
+- Registro de usuario
+- Login (validación de email/password)
+- Consulta de usuario (`/me/`) por email o rut
+- Recuperación de contraseña (solicitud y confirmación; valida existencia del usuario — el envío real de email aún no está implementado)
+- Perfil médico (consulta y actualización)
+- Imagen de perfil (subida, consulta y eliminación en Supabase Storage)
+- Configuración de cuenta (actualizar nombre, cambiar contraseña)
+- Documentos médicos: listado, creación, detalle, eliminación lógica
+- Categorías de documentos
+- Subida de documentos a Supabase Storage
+- Visualización de documentos mediante signed URL temporal
+- Descarga de documentos mediante signed URL temporal
+- Creación de links temporales para compartir documentos
+- Consulta pública de un link compartido mediante token
+
+---
+
+## 🔌 Endpoints actuales
+
+Todos los endpoints que requieren usuario aceptan `?email=` o `?rut=` como identificador (no requieren token).
+
+### Auth / Users (`/api/auth/`)
+
+| Método | Ruta |
+|---|---|
+| POST | `/api/auth/register/` |
+| POST | `/api/auth/login/` |
+| GET | `/api/auth/me/` |
+| GET, PATCH | `/api/auth/profile/` |
+| POST | `/api/auth/password-reset/request/` |
+| POST | `/api/auth/password-reset/confirm/` |
+| GET, POST, DELETE | `/api/auth/profile/image/` |
+| GET, PATCH | `/api/auth/account/settings/` |
+
+### Documents (`/api/documents/`)
+
+| Método | Ruta |
+|---|---|
+| GET | `/api/documents/categories/` |
+| GET, POST | `/api/documents/` |
+| GET, DELETE | `/api/documents/<document_id>/` |
+| PUT | `/api/documents/<document_id>/` — **no implementado, responde 501** |
+| GET | `/api/documents/<document_id>/download/` |
+| GET | `/api/documents/<document_id>/view/` |
+
+### Sharing (`/api/sharing/`)
+
+| Método | Ruta |
+|---|---|
+| POST | `/api/sharing/` |
+| GET | `/api/sharing/<token>/` |
+
+### Otras apps
+
+`/api/ai/`, `/api/health-centers/` y `/api/pets/` están registradas en `saludaldia/urls.py` pero exponen únicamente una vista placeholder de estado (`health`), sin lógica de negocio implementada. La app `audit` no tiene rutas registradas todavía.
+
+---
+
+## 📦 Supabase Storage
+
+- Bucket `profile-images`: fotos de perfil de usuario.
+- Buckets `documents-recetas-medicas`, `documents-examenes`, `documents-certificados`: documentos médicos, seleccionados según la categoría del documento al subirlo.
+- El archivo se almacena en Storage; la metadata (bucket, key, tipo, tamaño) se guarda en PostgreSQL.
+- Descarga y visualización usan **signed URLs temporales** generadas bajo demanda (no URLs públicas permanentes).
+
+---
+
+## 🧪 Pruebas
+
+- `python manage.py check` se usa para validar la configuración del proyecto.
+- Las pruebas de endpoints se realizan principalmente mediante **Postman**.
+- **No existe todavía una suite automatizada de pytest** para este backend.
+
+Colecciones Postman actuales:
+
+```
+apps/backend/Postman Collection/Saludaldia_corregida.postman_collection.json
+apps/backend/Postman Collection/Saludaldia_documents_updated.postman_collection.json
+```
+
+---
+
+## 🚧 Trabajo futuro
+
+- **JWT y autenticación mediante tokens** (access/refresh, `Authorization: Bearer`) en una próxima generación del proyecto.
+- Sustitución progresiva de la identificación por `email`/`rut` en query params por usuario autenticado (`request.user`).
+- Suite de tests automatizados (pytest / pytest-django).
+- Implementación completa de los módulos todavía en desarrollo o stub: `pets`, `health_centers`, `ai_analysis`, `audit`.
+- Envío real de emails para el flujo de recuperación de contraseña.
+- Revisión de seguridad y estrategia de despliegue previa a producción.
