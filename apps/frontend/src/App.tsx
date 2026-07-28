@@ -31,7 +31,7 @@ export default function App() {
       <Route path="/login"  element={<LoginPage />} />
       <Route path="/signup" element={<SignupPage />} />
       <Route path="/complete-profile" element={<CompleteProfilePage />} />
-      <Route path="/share/:token" element={<SharePage />} />
+      <Route path="/shared/:token" element={<SharePage />} />
 
       {/* Rutas protegidas */}
       <Route

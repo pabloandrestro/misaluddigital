@@ -7,11 +7,11 @@ import iconoDocumentos from "@/assets/img/icono-documentos.png";
 import iconoExamenes from "@/assets/img/icono-examenes.png";
 import iconoLicencias from "@/assets/img/icono-licencias.png";
 import iconoRecetas from "@/assets/img/icono-recetas.png";
-import UploadDocumentModal from "@/components/layout/UploadDocumentModal";
 import { api } from "@/lib/api/client";
+import ShareHistoryModal from "@/components/layout/ShareHistoryModal"; 
+import UploadDocumentModal from "@/components/layout/UploadDocumentModal";
 
-// Documento tal como lo devuelve DocumentSerializer: las claves son las de la
-// izquierda de cada CharField(source=...), no el nombre de columna del modelo.
+
 interface Document {
   id: string;
   title: string;
@@ -46,6 +46,7 @@ export default function DashboardPage() {
   const user = useAuthStore((s) => s.user);
   const [activeTab, setActiveTab] = useState<string | null>(null);
   const [showUpload, setShowUpload] = useState(false);
+  const [showShareHistory, setShowShareHistory] = useState(false);
   const [documentos, setDocumentos] = useState<Document[]>([]);
   const [loadingDocs, setLoadingDocs] = useState(true);
   const [selectedDoc, setSelectedDoc] = useState<Document | null>(null);
@@ -180,10 +181,12 @@ export default function DashboardPage() {
           </p>
         </div>
         <div className="flex flex-col sm:flex-row gap-3">
-          <button className="flex items-center justify-center gap-2 px-4 py-2 rounded-full border border-primary-mid text-primary-mid text-sm hover:bg-primary-light transition-colors">
-            <Share2 size={15} />
-            Compartir historial
-          </button>
+          <button
+              onClick={() => setShowShareHistory(true)}
+              className="flex items-center justify-center gap-2 px-4 py-2 rounded-full border border-primary-mid text-primary-mid text-sm hover:bg-primary-light transition-colors">
+              <Share2 size={15} />
+              Compartir historial
+            </button>
           <button
             onClick={() => setShowUpload(true)}
             className="flex items-center justify-center gap-2 px-4 py-2 rounded-full bg-primary-mid text-white text-sm hover:bg-primary-dark transition-colors">
@@ -325,6 +328,14 @@ export default function DashboardPage() {
             setShowUpload(false);
             fetchDocuments();
           }}
+        />
+      )}
+
+      {/* Modal compartir historial */}
+      {showShareHistory && (
+        <ShareHistoryModal
+          documents={documentos.map((d) => ({ id: d.id, title: d.title }))}
+          onClose={() => setShowShareHistory(false)}
         />
       )}
 
