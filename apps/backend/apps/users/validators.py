@@ -288,6 +288,30 @@ class UserValidator:
         return True
 
     @staticmethod
+    def validate_profile_data(data):
+        # exige un dict para poder actualizar el perfil
+        if data is None or not isinstance(data, dict):
+            raise serializers.ValidationError({
+                "data": "datos de perfil invalidos."
+            })
+
+    @staticmethod
+    def validate_list_payload(value, field_name):
+        # exige que el payload sea una lista
+        if not isinstance(value, list):
+            raise serializers.ValidationError({
+                field_name: "debe ser una lista."
+            })
+
+    @staticmethod
+    def validate_text_payload(value, field_name):
+        # exige que el payload sea texto
+        if not isinstance(value, str):
+            raise serializers.ValidationError({
+                field_name: "debe ser texto."
+            })
+
+    @staticmethod
     def validate_profile_image_file(file):
         # Valida la imagen antes de enviarla a storage.
         if not file:

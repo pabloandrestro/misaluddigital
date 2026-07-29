@@ -6,7 +6,7 @@ from apps.users.validators import UserValidator
 class ShareDocumentSerializer(serializers.Serializer):
 
     # nombre del profesional que recibirá el enlace
-    professional_name = serializers.CharField(max_length=255)
+    professional_name = serializers.CharField(max_length=150)
 
     # RUT del profesional, se valida con algoritmo módulo 11
     professional_rut = serializers.CharField(max_length=20)

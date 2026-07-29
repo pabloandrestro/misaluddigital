@@ -1,11 +1,12 @@
 import os
 import uuid
 
-from django.conf import settings
 from rest_framework import serializers
 
 from apps.users.services import UserService
+from saludaldia.supabase_client import get_supabase_client
 
+from .constants import DOCUMENT_SIGNED_URL_EXPIRES_IN_SECONDS
 from .repositories import DocumentRepository, DocumentCategoryRepository
 
 
@@ -20,7 +21,7 @@ class DocumentService:
 
         user = UserService.get_user_by_identifier(email=email, rut=rut)
 
-        if not DocumentService.validate_user_exists(user):
+        if not UserService.validate_user_exists(user):
             raise serializers.ValidationError({
                 "user": "El usuario no existe."
             })
@@ -58,7 +59,7 @@ class DocumentService:
 
     @staticmethod
     def get_documents_by_user(user):
-        if not DocumentService.validate_user_exists(user):
+        if not UserService.validate_user_exists(user):
             raise serializers.ValidationError({
                 "user": "El usuario no existe."
             })
@@ -67,12 +68,12 @@ class DocumentService:
 
     @staticmethod
     def get_document_by_id_and_user(document_id, user):
-        if not DocumentService.validate_user_exists(user):
+        if not UserService.validate_user_exists(user):
             raise serializers.ValidationError({
                 "user": "El usuario no existe."
             })
 
-        document = DocumentRepository.get_by_id_and_user(document_id, user)
+        document = DocumentRepository.get_active_by_id_and_user(document_id, user)
 
         if not DocumentService.validate_document_exists(document):
             raise serializers.ValidationError({
@@ -83,7 +84,7 @@ class DocumentService:
 
     @staticmethod
     def create_document(user, data):
-        if not DocumentService.validate_user_exists(user):
+        if not UserService.validate_user_exists(user):
             raise serializers.ValidationError({
                 "user": "El usuario no existe."
             })
@@ -166,10 +167,6 @@ class DocumentService:
         return DocumentRepository.soft_delete(document)
 
     @staticmethod
-    def validate_user_exists(user):
-        return user is not None
-
-    @staticmethod
     def validate_document_exists(document):
         return document is not None
 
@@ -179,7 +176,7 @@ class DocumentService:
 
     @staticmethod
     def get_document_download_url(document_id, email=None, rut=None):
-        expires_in = 300
+        expires_in = DOCUMENT_SIGNED_URL_EXPIRES_IN_SECONDS
 
         if not email and not rut:
             raise serializers.ValidationError({
@@ -222,7 +219,7 @@ class DocumentService:
     # visualizar documento
     @staticmethod
     def get_document_view_url(document_id, email=None, rut=None):
-        expires_in = 300
+        expires_in = DOCUMENT_SIGNED_URL_EXPIRES_IN_SECONDS
 
         if not email and not rut:
             raise serializers.ValidationError({
@@ -322,18 +319,8 @@ class DocumentStorageService:
     # CONSEGUIR Y CREAR EL CLIENTE SUPABASE
     @staticmethod
     def get_supabase_client():
-        # crea cliente de supabase storage con credenciales de settings
-        supabase_url = getattr(settings, "SUPABASE_URL", "")
-        supabase_key = getattr(settings, "SUPABASE_SERVICE_KEY", "")
-
-        if not supabase_url or not supabase_key:
-            raise serializers.ValidationError({
-                "storage": "Faltan credenciales de supabase storage."
-            })
-
-        from supabase import create_client
-
-        return create_client(supabase_url, supabase_key)
+        # delega la creacion del cliente al helper compartido con users
+        return get_supabase_client({"storage": "Faltan credenciales de supabase storage."})
 
     # ELIMINAR EL DOCUMENTO DEL STORAGE
     @staticmethod
@@ -388,7 +375,7 @@ class DocumentStorageService:
 
     # CREAR URL SIGNED PARA DESCARGA Y VISUALIZACION
     @staticmethod
-    def create_signed_url(bucket_name, file_key, expires_in=300):
+    def create_signed_url(bucket_name, file_key, expires_in=DOCUMENT_SIGNED_URL_EXPIRES_IN_SECONDS):
         client = DocumentStorageService.get_supabase_client()
 
         response = client.storage.from_(bucket_name).create_signed_url(

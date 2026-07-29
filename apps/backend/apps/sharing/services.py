@@ -7,6 +7,7 @@ from rest_framework.exceptions import NotFound, ValidationError
 from apps.users.services import UserService
 from apps.documents.models import Document
 from apps.documents.services import DocumentStorageService
+from apps.documents.constants import DOCUMENT_SIGNED_URL_EXPIRES_IN_SECONDS
 from .serializers import ShareDocumentSerializer
 from .repositories import TemporaryAccessLinkRepository
 
@@ -116,14 +117,14 @@ class ShareDocumentService:
                 signed_url = DocumentStorageService.create_signed_url(
                     doc.bucket_name,
                     doc.file_key,
-                    expires_in=300
+                    expires_in=DOCUMENT_SIGNED_URL_EXPIRES_IN_SECONDS
                 )
                 documents_list.append({
                     "id": str(doc.id),
                     "title": doc.title,
                     "mime_type": doc.mime_type,
                     "view_url": signed_url,
-                    "expires_in": 300
+                    "expires_in": DOCUMENT_SIGNED_URL_EXPIRES_IN_SECONDS
                 })
 
         return {

@@ -3,8 +3,13 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 
-from .services import UserService
-from apps.users.services import AuthService
+from .services import (
+    UserService,
+    AuthService,
+    MedicalProfileService,
+    AccountSettingsService,
+    ProfileImageService,
+)
 from apps.users.serializers import (
     UserSerializer,
     LoginSerializer,
@@ -21,9 +26,13 @@ class UserResolver:
 
     # resuelve y valida usuario por email o rut desde query_params o data
     @staticmethod
-    def resolve_user(request, message_if_missing):
-        email = request.query_params.get("email") or request.data.get("email")
-        rut = request.query_params.get("rut") or request.data.get("rut")
+    def resolve_user(request, message_if_missing, include_body=True):
+        if include_body:
+            email = request.query_params.get("email") or request.data.get("email")
+            rut = request.query_params.get("rut") or request.data.get("rut")
+        else:
+            email = request.query_params.get("email")
+            rut = request.query_params.get("rut")
 
         if not email and not rut:
             return None, Response({
@@ -62,7 +71,7 @@ def register(request):
         }, status=status.HTTP_400_BAD_REQUEST)
 
     try:
-        user = UserService.register_user(serializer.validated_data)
+        user = AuthService.register_user(serializer.validated_data)
 
         if user is None:
             return Response({
@@ -85,11 +94,10 @@ def register(request):
             "errors": error.detail
         }, status=status.HTTP_400_BAD_REQUEST)
 
-    except Exception as error:
+    except Exception:
         return Response({
             "status": "error",
-            "message": "Ocurrio un error interno al crear el usuario.",
-            "details" : str(error)
+            "message": "Ocurrio un error interno al crear el usuario."
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 @api_view(["POST"])
@@ -123,6 +131,13 @@ def login(request):
             "message": "Inicio de sesion exitoso."
         }, status=status.HTTP_200_OK)
 
+    except serializers.ValidationError as error:
+        return Response({
+            "status": "error",
+            "message": "No se pudo iniciar sesion.",
+            "errors": error.detail
+        }, status=status.HTTP_400_BAD_REQUEST)
+
     except Exception:
         return Response({
             "status": "error",
@@ -146,7 +161,7 @@ def medical_profile(request):
     try:
 
         if request.method == "GET":
-            profile = UserService.get_medical_profile(user)
+            profile = MedicalProfileService.get_medical_profile(user)
             response_serializer = MedicalProfileSerializer(profile)
 
             return Response({
@@ -170,7 +185,7 @@ def medical_profile(request):
                     "errors": serializer.errors
                 }, status=status.HTTP_400_BAD_REQUEST)
 
-            profile = UserService.update_medical_profile(
+            profile = MedicalProfileService.update_medical_profile(
                 user=user,
                 data=serializer.validated_data,
             )
@@ -273,7 +288,8 @@ def password_reset_confirm(request):
 def me(request):
     user, error_response = UserResolver.resolve_user(
         request,
-        message_if_missing="Debe de enviar email o rut para buscar el usuario."
+        message_if_missing="Debe de enviar email o rut para buscar el usuario.",
+        include_body=False
     )
     if error_response:
         return error_response
@@ -307,7 +323,7 @@ def profile_image(request):
     try:
 
         if request.method == "GET":
-            image = UserService.get_profile_image_metadata(user)
+            image = ProfileImageService.get_profile_image_metadata(user)
 
             return Response({
                 "status": "success",
@@ -327,12 +343,12 @@ def profile_image(request):
 
             file = serializer.validated_data["image"]
 
-            UserService.upload_user_profile_image(
+            ProfileImageService.upload_user_profile_image(
                 user=user,
                 file=file,
             )
 
-            image = UserService.get_profile_image_metadata(user)
+            image = ProfileImageService.get_profile_image_metadata(user)
 
             return Response({
                 "status": "success",
@@ -341,7 +357,7 @@ def profile_image(request):
             }, status=status.HTTP_200_OK)
 
         if request.method == "DELETE":
-            UserService.delete_user_profile_image(user)
+            ProfileImageService.delete_user_profile_image(user)
 
             return Response({
                 "status": "success",
@@ -355,11 +371,10 @@ def profile_image(request):
             "errors": error.detail,
         }, status=status.HTTP_400_BAD_REQUEST)
 
-    except Exception as error:
+    except Exception:
         return Response({
             "status": "error",
             "message": "Ocurrio un error interno al procesar la imagen de perfil.",
-            "error" : str(error),
         }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 # ---------------------------
@@ -396,7 +411,7 @@ def account_settings(request):
                     "errors": serializer.errors
                 }, status=status.HTTP_400_BAD_REQUEST)
 
-            user = UserService.update_account_settings(
+            user = AccountSettingsService.update_account_settings(
                 user=user,
                 data=serializer.validated_data,
             )
